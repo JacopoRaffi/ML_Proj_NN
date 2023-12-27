@@ -1,11 +1,26 @@
 import numpy
 from ActivationFunctions import ActivationFunctions
-import math
 
 class Neuron:
-    '''Implementation of a neuron composing the NN'''
+    '''Implementation of a neuron composing the NN
+    
+    Attributes
+    ----------
+    predecessors : list
+        list of neurons sending their outputs in input to this neuron
+    successors : list
+        list of neurons receiving this neuron's outputs
+    w : array of float
+        weights vector
+    f : callable
+        activation function
+    f_parameters : ??
+        creates the list for the additional (optional) parameters of the activation function
 
-    def __init__(self, n_input:int, activation_fun:callable, rand_range_min:float, rand_range_max:float, fan_in:bool, *args):
+    '''
+    
+    
+    def __init__(self, n_input:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
         '''
         Neuron initialisation
         
@@ -79,11 +94,11 @@ class Neuron:
             
 
 if __name__ == "__main__":
-    fun = ActivationFunctions.softplus
-    neuron = Neuron(11, fun, -0.7, 0.7, False, 2)
+    fun = ActivationFunctions.gaussian
+    neuron = Neuron(11, -0.7, 0.7, False, fun, 2)
 
     w = neuron.w
-    x = numpy.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    x = numpy.random.rand(11)
     y = numpy.inner(w, x)
     print("INPUT: ", y)
     print("NEURON: ", neuron.forward(x))

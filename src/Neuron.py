@@ -57,6 +57,25 @@ class Neuron:
         :return: the Neuron's output
         '''
         return self.f(numpy.inner(self.w, input), *self.f_parameters)
+    
+
+    def add_successor(self, neuron):
+        '''
+        Adds a neuron to the list of the Neuron's successors
+        
+        :param neuron: the Neuron to add to the list of successors
+        :return: -
+        '''
+        self.successors.append(neuron)
+
+    def add_predecessor(self, neuron):
+        '''
+        Adds a neuron to the list of the Neuron's predecessors
+        
+        :param neuron: the Neuron to add to the list of predecessors
+        :return: -
+        '''
+        self.predecessors.append(neuron)
             
 
 if __name__ == "__main__":

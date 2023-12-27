@@ -1,4 +1,5 @@
 import math
+import numpy
 
 class ActivationFunctions:
     '''The collections of all implemented activation functions'''
@@ -25,41 +26,33 @@ class ActivationFunctions:
     
     def tanh(input, alpha):
         '''
-        The sigmoidal logistic function
+        The hyperbolic tangent function
         
         :param input: the input of the function
-        :param alpha: the slope parameter of the sigmoid function
+        :param alpha: the slope parameter of the hyperbolic tangent function, the more alpha increases, the more skewed the function becomes
         :return: the results of the sigmoid function
         '''
 
-        return 1/(1 + math.exp(-(input*alpha)))
+        return numpy.tanh((input*alpha)/2)
 
+    def softplus(input):
+        '''
+        The softplus function 
+        
+        :param input: the input of the function
+        :return: the results of the sigmoid function
+        '''
 
+        # a safe softplus for large input
+        return math.log1p(math.exp(-abs(input))) + max(input, 0)
+    
+    def gaussian(input, alpha):
+        '''
+        The gaussian function
+        
+        :param input: the input of the function
+        :param alpha: the slope parameter of the gaussian function
+        :return: the results of the sigmoid function
+        '''
 
-    """
-    Adds two numbers and returns the result.
-
-    This add two real numbers and return a real result. You will want to
-    use this function in any place you would usually use the ``+`` operator
-    but requires a functional equivalent.
-
-    :param a: The first number to add
-    :param b: The second number to add
-    :type a: int
-    :type b: int
-    :return: The result of the addition
-    :rtype: int
-
-    :Example:
-
-    >>> add(1, 1)
-    2
-    >>> add(2.1, 3.4)  # all int compatible types work
-    5.5
-
-    .. seealso:: sub(), div(), mul()
-    .. warnings:: This is a completly useless function. Use it only in a 
-            tutorial unless you want to look like a fool.
-    .. note:: You may want to use a lambda function instead of this.
-    .. todo:: Delete this function. Then masturbate with olive oil.
-    """
+        return math.exp(-alpha*(input**2))

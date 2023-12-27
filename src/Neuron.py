@@ -3,7 +3,7 @@ import numpy
 class Neuron:
     '''Implementation of a neuron composing the NN'''
 
-    def __init__(self, n_input:int, activation_fun:callable):
+    def __init__(self, n_input:int, activation_fun:callable, *args):
         '''
         Neuron initialisation
         
@@ -15,6 +15,8 @@ class Neuron:
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.w = numpy.zeros(n_input) # weights vector
         self.f = activation_fun # activation function
+        self.f_parameters = [p for p in args] # creates the list for the additional (optional) parameters of the activation function
+        
 
     def update_weights(self, new_w:numpy.array):
         '''
@@ -24,6 +26,7 @@ class Neuron:
         :return: -
         '''
         self.w = new_w
+        
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool):
         '''
@@ -38,6 +41,7 @@ class Neuron:
         if fan_in:
             self.w = self.w * 2/fan_in
         
+        
     def forward(self, input:numpy.array):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units
@@ -45,5 +49,5 @@ class Neuron:
         :param input: Neuron's input vector
         :return: the Neuron's output
         '''
-        return self.f(numpy.inner(self.w, input))
+        return self.f(numpy.inner(self.w, input), *self.f_parameters)
             

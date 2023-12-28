@@ -3,7 +3,7 @@ from ActivationFunctions import ActivationFunctions
 
 from ABCNeuron import ABCNeuron
 
-class HiddenNeuron(ABCNeuron):
+class InputNeuron(ABCNeuron):
     '''
     Implementation of an input neuron composing the NN
     

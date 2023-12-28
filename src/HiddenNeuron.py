@@ -72,7 +72,7 @@ class HiddenNeuron(ABCNeuron):
         '''
         self.w = numpy.random.uniform(rand_range_min, rand_range_max, self.w.size)
         if fan_in:
-            self.w = self.w * 2/fan_in
+            self.w = self.w * 2/len(self.w)
         
 
     def forward(self, input:numpy.array):

@@ -94,6 +94,24 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.append(neuron)
+    
+    def extend_successors(self, neurons:list):
+        '''
+        Extends the list of the Neuron's successors
+        
+        :param neurons: the list of Neurons to add to the list of successors
+        :return: -
+        '''
+        self.successors.extend(neurons)
+
+    def extend_predecessors(self, neurons:list):
+        '''
+        Extends the list of the Neuron's predecessors
+        
+        :param neurons: the list of Neurons to add to the list of predecessors
+        :return: -
+        '''
+        self.predecessors.extend(neurons)
 
     def add_predecessor(self, neuron):
         '''

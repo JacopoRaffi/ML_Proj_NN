@@ -90,6 +90,15 @@ class OutputNeuron(ABCNeuron):
         '''
         self.predecessors.append(neuron)
 
+    def extend_predecessors(self, neurons:list):
+        '''
+        Extends the list of the Neuron's predecessors
+        
+        :param neurons: the list of Neurons to add to the list of predecessors
+        :return: -
+        '''
+        self.predecessors.extend(neurons)
+
     def reset_neuron_history(self):
         '''
         Resets the history of the neuron by clearing the list of previous outputs and the delta error

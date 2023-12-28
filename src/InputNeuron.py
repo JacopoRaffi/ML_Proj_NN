@@ -44,6 +44,15 @@ class HiddenNeuron(ABCNeuron):
         '''
         self.successors.append(neuron)
 
+    def extend_successors(self, neurons:list):
+        '''
+        Extends the list of the Neuron's successors
+        
+        :param neurons: the list of Neurons to add to the list of successors
+        :return: -
+        '''
+        self.successors.extend(neurons)
+
     def reset_neuron_history(self):
         '''
         Resets the history of the neuron by clearing the list of previous outputs

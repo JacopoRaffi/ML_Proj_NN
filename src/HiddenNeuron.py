@@ -4,7 +4,7 @@ from ActivationFunctions import ActivationFunctions
 from ABCNeuron import ABCNeuron
 
 class HiddenNeuron(ABCNeuron):
-    # TODO: modificare il tipo della lista di parametri della funzione di attivazione
+    # TODO: può andare bene questo tipo?? considerando che sono parametri per funzioni di attivazione
     '''
     Implementation of an hidden neuron composing the NN
     
@@ -18,7 +18,7 @@ class HiddenNeuron(ABCNeuron):
         weights vector
     f : callable
         activation function
-    f_parameters : ??
+    f_parameters : list of float or integers
         the list for the additional (optional) parameters of the activation function
     output_list : list of float
         list of the previous output of the neuron
@@ -75,7 +75,6 @@ class HiddenNeuron(ABCNeuron):
             self.w = self.w * 2/fan_in
         
 
-    # TODO: ha senso restituire il risultato se tanto lo memorizziamo?
     def forward(self, input:numpy.array):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
@@ -85,7 +84,6 @@ class HiddenNeuron(ABCNeuron):
         '''
         output_value = self.f(numpy.inner(self.w, input), *self.f_parameters)
         self.output_list.append(output_value)
-        return output_value
     
 
     def add_successor(self, neuron):
@@ -113,7 +111,7 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         self.output_list = []
-        self.delta_error = None # 
+        self.delta_error = None
 
     
             

@@ -15,7 +15,7 @@ class OutputNeuron(ABCNeuron):
         weights vector
     f : callable
         activation function
-    f_parameters : ??
+    f_parameters : list of float or integers
         the list for the additional (optional) parameters of the activation function
     output_list : list of float
         list of the previous output of the neuron
@@ -71,7 +71,6 @@ class OutputNeuron(ABCNeuron):
             self.w = self.w * 2/fan_in
         
 
-    # TODO: ha senso restituire il risultato se tanto lo memorizziamo?
     def forward(self, input:numpy.array):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
@@ -81,7 +80,6 @@ class OutputNeuron(ABCNeuron):
         '''
         output_value = self.f(numpy.inner(self.w, input), *self.f_parameters)
         self.output_list.append(output_value)
-        return output_value
 
     def add_predecessor(self, neuron):
         '''
@@ -99,7 +97,7 @@ class OutputNeuron(ABCNeuron):
         :return: -
         '''
         self.output_list = []
-        self.delta_error = None # 
+        self.delta_error = None 
 
     
             

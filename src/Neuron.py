@@ -6,9 +6,9 @@ class Neuron:
     
     Attributes
     ----------
-    predecessors : list
+    predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
-    successors : list
+    successors : list of neurons
         list of neurons receiving this neuron's outputs
     w : array of float
         weights vector

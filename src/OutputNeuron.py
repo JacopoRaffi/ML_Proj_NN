@@ -9,13 +9,15 @@ class OutputNeuron(ABCNeuron):
     
     Attributes
     ----------
+    index : int
+        the index of the neuron in the NN
     predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
     w : array of float
         weights vector
     f : callable
         activation function
-    f_parameters : list of float or integers
+    f_parameters : list of float
         the list for the additional (optional) parameters of the activation function
     output_list : list of float
         list of the previous output of the neuron
@@ -28,6 +30,7 @@ class OutputNeuron(ABCNeuron):
         '''
         Neuron initialisation
         
+        :param index: the index of the neuron in the NN
         :param n_input: the number of inputs receivable by the Neuron
         :param activation_fun: the Neuron's actviation function
         :param rand_range_min: minimum value for random weights initialisation range

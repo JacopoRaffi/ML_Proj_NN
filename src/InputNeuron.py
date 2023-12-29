@@ -9,6 +9,8 @@ class InputNeuron(ABCNeuron):
     
     Attributes
     ----------
+    index : int
+        the index of the neuron in the NN
     successors : list of neurons
         list of neurons receiving this neuron's outputs
     output_list : list of float
@@ -19,6 +21,7 @@ class InputNeuron(ABCNeuron):
         '''
         Neuron initialisation
 
+        :param index: the index of the neuron in the NN
         :return: -
         '''
         self.index = index
@@ -37,7 +40,8 @@ class InputNeuron(ABCNeuron):
     
     def add_successor(self, neuron):
         '''
-        Adds a neuron to the list of the Neuron's successors
+        Adds a neuron to the list of the Neuron's successors and
+        update the predecessors' list of the successor neuron with the current neuron
         
         :param neuron: the Neuron to add to the list of successors
         :return: -
@@ -47,7 +51,8 @@ class InputNeuron(ABCNeuron):
     
     def extend_successors(self, neurons:list):
         '''
-        Extends the list of the Neuron's successors
+        Extends the list of the Neuron's successors and
+        update the predecessors' list of the successors neurons with the current neuron
         
         :param neurons: the list of Neurons to add to the list of successors
         :return: -

@@ -4,12 +4,13 @@ from ActivationFunctions import ActivationFunctions
 from ABCNeuron import ABCNeuron
 
 class HiddenNeuron(ABCNeuron):
-    # TODO: può andare bene questo tipo?? considerando che sono parametri per funzioni di attivazione
     '''
     Implementation of an hidden neuron composing the NN
     
     Attributes
     ----------
+    index : int
+        the index of the neuron in the NN
     predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
     successors : list of neurons
@@ -18,7 +19,7 @@ class HiddenNeuron(ABCNeuron):
         weights vector
     f : callable
         activation function
-    f_parameters : list of float or integers
+    f_parameters : list of float
         the list for the additional (optional) parameters of the activation function
     output_list : list of float
         list of the previous output of the neuron
@@ -31,6 +32,7 @@ class HiddenNeuron(ABCNeuron):
         '''
         Neuron initialisation
         
+        :param index: the index of the neuron in the NN
         :param n_input: the number of inputs receivable by the Neuron
         :param activation_fun: the Neuron's actviation function
         :param rand_range_min: minimum value for random weights initialisation range
@@ -87,7 +89,8 @@ class HiddenNeuron(ABCNeuron):
 
     def add_successor(self, neuron):
         '''
-        Adds a neuron to the list of the Neuron's successors
+        Adds a neuron to the list of the Neuron's successors and
+        update the predecessors' list of the successor neuron with the current neuron
         
         :param neuron: the Neuron to add to the list of successors
         :return: -
@@ -97,7 +100,8 @@ class HiddenNeuron(ABCNeuron):
     
     def extend_successors(self, neurons:list):
         '''
-        Extends the list of the Neuron's successors
+        Extends the list of the Neuron's successors and
+        update the predecessors' list of the successors neurons with the current neuron
         
         :param neurons: the list of Neurons to add to the list of successors
         :return: -

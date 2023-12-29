@@ -6,12 +6,13 @@ from ActivationFunctions import ActivationFunctions
 
 
 class NeuralNetwork:
-    #TODO: implementare il metodo __construct_from_dict e dopo il metodo __topological_sort
     '''
     Implementation of the neural network that includes neurons and all method to use and train the NN
     
     Attributes
     ----------
+    neurons: list of ABCNeuron
+        the list of neurons, sorted in topological order, composing the NN
     
 
     '''
@@ -51,7 +52,7 @@ class NeuralNetwork:
         :param rand_range_min: minimum value for random weights initialisation range
         :param rand_range_max: maximum value for random weights initialisation range
         :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
-        :return: the dictionary that represents the Neural Network of ABCNeuron's objects
+        :return: the list of Neurons that compose the Neural Network
         '''
         units = []
         unit_type = ''
@@ -80,14 +81,21 @@ class NeuralNetwork:
         for node in topology:
             unit_type = topology[node][0]
             
-            if unit_type != 'output':
+            if unit_type != 'output': # Output units have no successors
                 unit_successors = [units[int(u)] for u in topology[node][3]]
                 units[int(node)].extend_successors(unit_successors)
         
         return units
     
     def __topological_sort_util(self, index:int, visited:list, ordered:list):
+        '''
+        Recursive function that builds the topological(inverse) order updating ordered list 
         
+        :param: index: the index of the neuron to visit
+        :param: visited: the list of visited neurons
+        :param: ordered: the list of ordered neurons (inverse topological order)
+        :return: -
+        '''
         visited[index] = True
         
         for succ in self.neurons[index].successors:
@@ -100,11 +108,8 @@ class NeuralNetwork:
         '''
         Sort on a topological order the neurons of the Neural Network
         
-        :param topology: the graph structure described by a dictionary (see __init__ comments)
-        :param rand_range_min: minimum value for random weights initialisation range
-        :param rand_range_max: maximum value for random weights initialisation range
-        :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
-        :return: the list of neurons sorted in topological order
+        :param: -
+        :return: -
         '''
         n_neurons = len(self.neurons)
         visited = [False]*n_neurons
@@ -132,6 +137,9 @@ class NeuralNetwork:
                  '5': ['output', 'identity', [fun_args...], []],
                  '6': ['output', 'identity', [fun_args...], []]}
 
+        :param: rand_range_min: minimum value for random weights initialisation range
+        :param: rand_range_max: maximum value for random weights initialisation range
+        :param: fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         :return: -
         '''
 

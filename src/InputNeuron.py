@@ -11,6 +11,8 @@ class InputNeuron(ABCNeuron):
     ----------
     index : int
         the index of the neuron in the NN
+    type : str
+        the type of the neuron
     successors : list of neurons
         list of neurons receiving this neuron's outputs
     output_list : list of float
@@ -25,6 +27,7 @@ class InputNeuron(ABCNeuron):
         :return: -
         '''
         self.index = index
+        self.type = 'input'
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.output_list = [] # creates the output list        
         

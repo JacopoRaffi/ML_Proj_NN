@@ -69,13 +69,13 @@ class NeuralNetwork:
             unit_activation_function_args = [float(a) for a in topology[node][2]]
             
             if unit_type == 'input':
-                units[unit_index] = InputNeuron(unit_index)
+                units.append(InputNeuron(unit_index))
                 
             elif unit_type == 'hidden':
-                units[unit_index] = HiddenNeuron(unit_index, rand_range_min, rand_range_max, fan_in, self.__get_function_from_string(unit_activation_function), unit_activation_function_args)
+                units.append(HiddenNeuron(unit_index, rand_range_min, rand_range_max, fan_in, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
                 
             elif unit_type == 'output': # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
-                units[unit_index] = OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args)
+                units.append(OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
             
         # All Neurons' dependecies of successors and predecessors are filled inside the objects
         for node in topology:
@@ -98,11 +98,12 @@ class NeuralNetwork:
         '''
         visited[index] = True
         
-        for succ in self.neurons[index].successors:
-            if not visited[succ.index]:
-                self.__topological_sort_util(succ.index, visited, ordered)
+        if self.neurons[index].type != 'output':
+            for succ in self.neurons[index].successors:
+                if not visited[succ.index]:
+                    self.__topological_sort_util(succ.index, visited, ordered)
         
-        ordered.append(succ)
+        ordered.append(self.neurons[index])
     
     def __topological_sort(self):
         '''
@@ -115,7 +116,7 @@ class NeuralNetwork:
         visited = [False]*n_neurons
         ordered = []
         
-        for i in range(len(n_neurons)):
+        for i in range(n_neurons):
             if not visited[i]:
                 self.__topological_sort_util(i, visited, ordered)
         
@@ -159,3 +160,17 @@ class NeuralNetwork:
     def train(self, ):
         return
     
+
+
+if __name__ == '__main__':
+    topology = {'0': ['input', 'None', [], ['2', '3', '4', '5']], 
+                '1': ['input', 'None', [], ['2', '3', '4', '6']],
+                '2': ['hidden', 'sigmoid', ['1'], ['5', '6', '4']],
+                '3': ['hidden', 'sigmoid', ['1'], ['5', '6']],
+                '4': ['hidden', 'sigmoid', ['1'], ['5', '6']],
+                '5': ['output', 'identity', [], []],
+                '6': ['output', 'identity', [], []]}
+    
+    nn = NeuralNetwork(topology)
+    for neuron in nn.neurons:
+        print(neuron.index, " ", neuron.type)

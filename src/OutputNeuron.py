@@ -11,6 +11,8 @@ class OutputNeuron(ABCNeuron):
     ----------
     index : int
         the index of the neuron in the NN
+    type : str
+        the type of the neuron
     predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
     w : array of float
@@ -40,6 +42,7 @@ class OutputNeuron(ABCNeuron):
         :return: -
         '''
         self.index = index
+        self.type = 'output'
         self.predecessors = [] # list of neurons sending their outputs in input to this neuron
         self.w = numpy.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function

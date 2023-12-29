@@ -11,6 +11,8 @@ class HiddenNeuron(ABCNeuron):
     ----------
     index : int
         the index of the neuron in the NN
+    type : str
+        the type of the neuron
     predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
     successors : list of neurons
@@ -42,6 +44,7 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         self.index = index
+        self.type = 'hidden'
         self.predecessors = [] # list of neurons sending their outputs in input to this neuron
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.w = numpy.array([]) # weights vector (initialised later)

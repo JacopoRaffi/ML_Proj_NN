@@ -43,7 +43,7 @@ class NeuralNetwork:
 
         return fun
 
-    def __construct_from_dict(self, topology:dict, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, *args):
+    def __construct_from_dict(self, topology:dict, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
         '''
         Builds a Neural Network of ABCNeuron's objects from the topology
         
@@ -53,10 +53,50 @@ class NeuralNetwork:
         :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         :return: the dictionary that represents the Neural Network of ABCNeuron's objects
         '''
-        graph = {}
-        return graph
+        units = []
+        unit_type = ''
+        unit_activation_function = ''
+        unit_activation_function_args = []
+        unit_successors = []
+        unit_index = 0
+        
+        # All Neurons are initialised without synapses (successors/predecessors dependencies)
+        for node in topology:
+            unit_index = int(node)
+            unit_type = topology[node][0]
+            unit_activation_function = topology[node][1]
+            unit_activation_function_args = [float(a) for a in topology[node][2]]
+            
+            if unit_type == 'input':
+                units[unit_index] = InputNeuron(unit_index)
+                
+            elif unit_type == 'hidden':
+                units[unit_index] = HiddenNeuron(unit_index, rand_range_min, rand_range_max, fan_in, self.__get_function_from_string(unit_activation_function), unit_activation_function_args)
+                
+            elif unit_type == 'output': # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
+                units[unit_index] = OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args)
+            
+        # All Neurons' dependecies of successors and predecessors are filled inside the objects
+        for node in topology:
+            unit_type = topology[node][0]
+            
+            if unit_type != 'output':
+                unit_successors = [units[int(u)] for u in topology[node][3]]
+                units[int(node)].extend_successors(unit_successors)
+        
+        return units
     
-    def __topological_sort(self, topology:dict, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, *args):
+    def __topological_sort_util(self, index:int, visited:list, ordered:list):
+        
+        visited[index] = True
+        
+        for succ in self.neurons[index].successors:
+            if not visited[succ.index]:
+                self.__topological_sort_util(succ.index, visited, ordered)
+        
+        ordered.append(succ)
+    
+    def __topological_sort(self):
         '''
         Sort on a topological order the neurons of the Neural Network
         
@@ -66,32 +106,37 @@ class NeuralNetwork:
         :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         :return: the list of neurons sorted in topological order
         '''
-        graph = self.__construct_from_dict(topology, rand_range_min, rand_range_max, fan_in, *args)
-        neurons = []
-        return neurons
-
-    def __init__(self, topology:dict = {}):
+        n_neurons = len(self.neurons)
+        visited = [False]*n_neurons
+        ordered = []
+        
+        for i in range(len(n_neurons)):
+            if not visited[i]:
+                self.__topological_sort_util(i, visited, ordered)
+        
+        self.neurons = ordered[::-1]
+                
+    def __init__(self, topology:dict = {}, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
         '''
         Neural Network inizialization
         
         :param topology: the graph structure is described by a dictionary that has a key for each unit in the network, 
-            and for each key contains a list of unit type (input, hidden, output), activation function, 
+            and for each key contains a list of unit type (input, hidden, output), activation function, parameters of activation functions
             and list of nodes where an outgoing arc terminates.
             
-            eg: {'A': ['input', 'None', ['C', 'D', 'E']], 
-                 'B': ['input', 'None', ['C', 'D', 'E']],
-                 'C': ['hidden', 'sigmoid', ['F', 'G']],
-                 'D': ['hidden', 'sigmoid', ['F', 'G']],
-                 'E': ['hidden', 'sigmoid', ['F', 'G']],
-                 'F': ['output', 'identity', []],
-                 'G': ['output', 'identity', []]}
+            eg: {'0': ['input', 'None', [], ['2', '3', '4']], 
+                 '1': ['input', 'None', [], ['2', '3', '4']],
+                 '2': ['hidden', 'sigmoid', [fun_args...], ['5', '6']],
+                 '3': ['hidden', 'sigmoid', [fun_args...], ['5', '6']],
+                 '4': ['hidden', 'sigmoid', [fun_args...], ['5', '6']],
+                 '5': ['output', 'identity', [fun_args...], []],
+                 '6': ['output', 'identity', [fun_args...], []]}
 
-            
         :return: -
         '''
 
-        
-        self.neurons = self.__topological_sort(topology) # list of neurons sorted in topological order
+        self.neurons = self.__construct_from_dict(topology, rand_range_min, rand_range_max, fan_in)
+        self.__topological_sort() # The NN keeps its neurons in topological order
     
     def __str__(self):
         '''

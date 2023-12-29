@@ -24,7 +24,7 @@ class OutputNeuron(ABCNeuron):
 
     '''
 
-    def __init__(self, n_input:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
+    def __init__(self, index:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = False, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
         '''
         Neuron initialisation
         
@@ -36,9 +36,9 @@ class OutputNeuron(ABCNeuron):
         :param args: additional (optional) parameters of the activation function
         :return: -
         '''
+        self.index = index
         self.predecessors = [] # list of neurons sending their outputs in input to this neuron
-        self.w = numpy.zeros(n_input) # weights vector
-        self.initialise_weights(rand_range_min, rand_range_max, fan_in) # initialises the weights' vector
+        self.w = numpy.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function
         self.f_parameters = list(args) # creates the list for the additional (optional) parameters of the activation function
 
@@ -66,9 +66,9 @@ class OutputNeuron(ABCNeuron):
         :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         :return: -
         '''
-        self.w = numpy.random.uniform(rand_range_min, rand_range_max, self.w.size)
+        self.w = numpy.random.uniform(rand_range_min, rand_range_max, len(self.predecessors))
         if fan_in:
-            self.w = self.w * 2/fan_in
+            self.w = self.w * 2/len(self.w)
         
 
     def forward(self, input:numpy.array):

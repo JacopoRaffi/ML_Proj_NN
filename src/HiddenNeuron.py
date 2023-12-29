@@ -27,7 +27,7 @@ class HiddenNeuron(ABCNeuron):
 
     '''
 
-    def __init__(self, n_input:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
+    def __init__(self, index:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
         '''
         Neuron initialisation
         
@@ -39,10 +39,10 @@ class HiddenNeuron(ABCNeuron):
         :param args: additional (optional) parameters of the activation function
         :return: -
         '''
+        self.index = index
         self.predecessors = [] # list of neurons sending their outputs in input to this neuron
         self.successors = [] # list of neurons receiving this neuron's outputs
-        self.w = numpy.zeros(n_input) # weights vector
-        self.initialise_weights(rand_range_min, rand_range_max, fan_in) # initialises the weights' vector
+        self.w = numpy.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function
         self.f_parameters = list(args) # creates the list for the additional (optional) parameters of the activation function
 
@@ -70,7 +70,7 @@ class HiddenNeuron(ABCNeuron):
         :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         :return: -
         '''
-        self.w = numpy.random.uniform(rand_range_min, rand_range_max, self.w.size)
+        self.w = numpy.random.uniform(rand_range_min, rand_range_max, len(self.predecessors))
         if fan_in:
             self.w = self.w * 2/len(self.w)
         
@@ -84,7 +84,6 @@ class HiddenNeuron(ABCNeuron):
         '''
         output_value = self.f(numpy.inner(self.w, input), *self.f_parameters)
         self.output_list.append(output_value)
-    
 
     def add_successor(self, neuron):
         '''
@@ -94,6 +93,7 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.append(neuron)
+        neuron.add_predecessor(self)
     
     def extend_successors(self, neurons:list):
         '''
@@ -103,6 +103,8 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.extend(neurons)
+        for successor in neurons:
+            successor.add_predecessor(self)
 
     def extend_predecessors(self, neurons:list):
         '''

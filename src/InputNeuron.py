@@ -15,12 +15,13 @@ class InputNeuron(ABCNeuron):
         list of the previous output of the neuron
     '''
 
-    def __init__(self):
+    def __init__(self, index:int):
         '''
         Neuron initialisation
 
         :return: -
         '''
+        self.index = index
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.output_list = [] # creates the output list        
         
@@ -34,7 +35,6 @@ class InputNeuron(ABCNeuron):
         self.output_list.append(input)
         return input
     
-
     def add_successor(self, neuron):
         '''
         Adds a neuron to the list of the Neuron's successors
@@ -43,7 +43,8 @@ class InputNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.append(neuron)
-
+        neuron.add_predecessor(self)
+    
     def extend_successors(self, neurons:list):
         '''
         Extends the list of the Neuron's successors
@@ -52,6 +53,8 @@ class InputNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.extend(neurons)
+        for successor in neurons:
+            successor.add_predecessor(self)
 
     def reset_neuron_history(self):
         '''

@@ -85,6 +85,11 @@ class NeuralNetwork:
                 unit_successors = [units[int(u)] for u in topology[node][3]]
                 units[int(node)].extend_successors(unit_successors)
         
+        # All Neurons weights vectors are initialised
+        for neuron in units:
+            if neuron.type != 'input':
+                neuron.initialise_weights(rand_range_min, rand_range_max, fan_in)
+
         return units
     
     def __topological_sort_util(self, index:int, visited:list, ordered:list):
@@ -173,4 +178,5 @@ if __name__ == '__main__':
     
     nn = NeuralNetwork(topology)
     for neuron in nn.neurons:
-        print(neuron.index, " ", neuron.type)
+        if neuron.type != 'input':
+            print(neuron.index, " ", neuron.type, " ", neuron.w)

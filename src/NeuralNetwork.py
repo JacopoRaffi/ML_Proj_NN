@@ -198,6 +198,18 @@ class NeuralNetwork:
             
         return output_vector
     
+    def __forward(self, minibatch:numpy.ndarray):
+        '''
+        Compute the output of the network given a minibatch of samples
+        
+        :param minibatch: a set of samples that will be consumed by the NN
+        :return: -
+        '''
+        index = 0
+        for sample in minibatch:
+            self.predict(minibatch[index], True)
+            index += 1
+            
     def train(self, ):
         return
     
@@ -214,11 +226,9 @@ if __name__ == '__main__':
                 '7': ['input', 'None', [], ['4', '6']]}
     
     nn = NeuralNetwork(topology, 7, 7, False)
-    for neuron in nn.neurons:
-        if neuron.type != 'input':
-            print(neuron.index, " ", neuron.type, " ", neuron.w)
-        else:
-            print(neuron.index, " ", neuron.type)
         
-    x = numpy.array([3,2,10])
-    print(nn.predict(x))
+    mb = numpy.array([[3,2,10], [3,2,10], [3,2,10], [3,2,10], [3,2,10], [3,2,10]])
+    #print(nn.forward(mb))
+    
+    for neuron in nn.neurons:
+        print(neuron.output_list)

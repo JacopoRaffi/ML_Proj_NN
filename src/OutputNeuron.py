@@ -51,7 +51,7 @@ class OutputNeuron(ABCNeuron):
         self.n_predecessors = 0
         self.w = numpy.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function
-        self.f_parameters = list(args) # creates the list for the additional (optional) parameters of the activation function
+        self.f_parameters = list(*args) # creates the list for the additional (optional) parameters of the activation function
 
         self.output_list = [] # creates the output list (instance variable exploited to store outputs for training scope)
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
@@ -95,16 +95,14 @@ class OutputNeuron(ABCNeuron):
         input = numpy.zeros(self.n_predecessors)
         index = 0
         for p in self.predecessors:
-            if training:
-                input[index] = p.output_list[-1]
-            else:
-                input[index] = p.last_predict
+            input[index] = p.last_predict
+            index += 1
                 
         output_value = self.f(numpy.inner(self.w, input), *self.f_parameters)
         if training:
             self.output_list.append(output_value)
-        else:
-            self.last_predict = output_value
+
+        self.last_predict = output_value
             
         return output_value
 
@@ -134,28 +132,3 @@ class OutputNeuron(ABCNeuron):
         '''
         self.output_list = []
         self.delta_error = None 
-
-    
-            
-
-if __name__ == "__main__":
-    import random
-
-    for i in range(1000):
-        fun = random.choice((ActivationFunctions.gaussian, ActivationFunctions.identity, ActivationFunctions.sigmoid,
-                         ActivationFunctions.tanh, ActivationFunctions.softplus))
-        neuron = OutputNeuron(11, -0.7, 0.7, False, fun, 2)
-        w = neuron.w
-        x = numpy.random.rand(11)
-        y = numpy.inner(w, x)
-        forward = neuron.forward(x)
-        fun_out = fun(y, 2)
-        print("INPUT: ", y, "NEURON: ", forward, "NOT NEURON: ", fun_out, '\t', forward==fun_out)
-    for i in range(25):
-        w = neuron.w
-        x = numpy.random.rand(11)
-        y = numpy.inner(w, x)
-        forward = neuron.forward(x)
-        fun_out = fun(y, 2)
-        print("INPUT: ", y, "NEURON: ", forward, "NOT NEURON: ", fun_out, '\t', forward==fun_out)
-    print(neuron)

@@ -49,8 +49,8 @@ class InputNeuron(ABCNeuron):
         output_value = input
         if training:
             self.output_list.append(output_value)
-        else:
-            self.last_predict = output_value
+        
+        self.last_predict = output_value
     
     def add_successor(self, neuron):
         '''

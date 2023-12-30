@@ -172,7 +172,7 @@ class NeuralNetwork:
     
     def predict(self, input:numpy.array, training:bool = False):
         '''
-        Builds a Neural Network of ABCNeuron's objects from the topology
+        Compute the output of the network given an input vector
         
         :param input: the input vector for the model
         :param training: a flag to determine the behaviour of neourons (if to store data for training or not)
@@ -183,20 +183,18 @@ class NeuralNetwork:
         # The input is forwarded towards the input units
         feature_index = 0
         for neuron in self.neurons[0:self.input_size]:
-            print("it should be INPUT, it is in fact: ", neuron.type)
             neuron.forward(input[feature_index], training)
             feature_index += 1
         
         # The hidden units will now take their predecessors results forwarding the signal throught the network
         for neuron in self.neurons[self.input_size:self.n_neurons-self.output_size]:
-            print("it should be HIDDEN, it is in fact: ", neuron.type)
             neuron.forward(training)
             
         # The output units will now take their predecessors results producing (returning) teh network's output
         feature_index = 0
         for neuron in self.neurons[self.n_neurons-self.output_size:]:
-            print("it should be OUTPUT, it is in fact: ", neuron.type)
             output_vector[feature_index] = neuron.forward(training)
+            feature_index += 1
             
         return output_vector
     
@@ -208,13 +206,19 @@ class NeuralNetwork:
 if __name__ == '__main__':
     topology = {'0': ['input', 'None', [], ['2', '3', '4', '5']], 
                 '1': ['input', 'None', [], ['2', '3', '4', '6']],
-                '2': ['hidden', 'sigmoid', ['1'], ['5', '6', '4']],
-                '3': ['hidden', 'sigmoid', ['1'], ['5', '6']],
-                '4': ['hidden', 'sigmoid', ['1'], ['5', '6']],
+                '2': ['hidden', 'identity', [], ['5', '6', '4']],
+                '3': ['hidden', 'identity', [], ['5', '6']],
+                '4': ['hidden', 'identity', [], ['5', '6']],
                 '5': ['output', 'identity', [], []],
-                '6': ['output', 'identity', [], []]}
+                '6': ['output', 'identity', [], []],
+                '7': ['input', 'None', [], ['4', '6']]}
     
-    nn = NeuralNetwork(topology)
+    nn = NeuralNetwork(topology, 7, 7, False)
     for neuron in nn.neurons:
         if neuron.type != 'input':
             print(neuron.index, " ", neuron.type, " ", neuron.w)
+        else:
+            print(neuron.index, " ", neuron.type)
+        
+    x = numpy.array([3,2,10])
+    print(nn.predict(x))

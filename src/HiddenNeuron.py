@@ -57,7 +57,7 @@ class HiddenNeuron(ABCNeuron):
         self.n_successors = 0
         self.w = numpy.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function
-        self.f_parameters = list(args) # creates the list for the additional (optional) parameters of the activation function
+        self.f_parameters = list(*args) # creates the list for the additional (optional) parameters of the activation function
 
         self.output_list = [] # creates the output list (instance variable exploited to store outputs for training scope)
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
@@ -103,16 +103,14 @@ class HiddenNeuron(ABCNeuron):
         input = numpy.zeros(self.n_predecessors)
         index = 0
         for p in self.predecessors:
-            if training:
-                input[index] = p.output_list[-1]
-            else:
-                input[index] = p.last_predict
+            input[index] = p.last_predict
+            index += 1
         
         output_value = self.f(numpy.inner(self.w, input), *self.f_parameters)
         if training:
             self.output_list.append(output_value)
-        else:
-            self.last_predict = output_value
+        
+        self.last_predict = output_value
 
     def add_successor(self, neuron):
         '''

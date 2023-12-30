@@ -3,6 +3,7 @@ from InputNeuron import InputNeuron
 from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
 from ActivationFunctions import ActivationFunctions
+import numpy
 
 
 class NeuralNetwork:
@@ -11,10 +12,13 @@ class NeuralNetwork:
     
     Attributes
     ----------
+    input_size: int
+        the number of input units of the network
+    output_size: int
+        the number of output units of the network
     neurons: list of ABCNeuron
         the list of neurons, sorted in topological order, composing the NN
     
-
     '''
 
     def __get_function_from_string(self, name:str):
@@ -69,12 +73,14 @@ class NeuralNetwork:
             unit_activation_function_args = [float(a) for a in topology[node][2]]
             
             if unit_type == 'input':
+                self.input_size += 1
                 units.append(InputNeuron(unit_index))
                 
             elif unit_type == 'hidden':
                 units.append(HiddenNeuron(unit_index, rand_range_min, rand_range_max, fan_in, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
                 
             elif unit_type == 'output': # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
+                self.output_size += 1
                 units.append(OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
             
         # All Neurons' dependecies of successors and predecessors are filled inside the objects
@@ -117,11 +123,11 @@ class NeuralNetwork:
         :param: -
         :return: -
         '''
-        n_neurons = len(self.neurons)
-        visited = [False]*n_neurons
+
+        visited = [False]*self.n_neurons
         ordered = []
         
-        for i in range(n_neurons):
+        for i in range(self.n_neurons):
             if not visited[i]:
                 self.__topological_sort_util(i, visited, ordered)
         
@@ -149,7 +155,10 @@ class NeuralNetwork:
         :return: -
         '''
 
+        self.input_size = 0
+        self.output_size = 0
         self.neurons = self.__construct_from_dict(topology, rand_range_min, rand_range_max, fan_in)
+        self.n_neurons = len(self.neurons)
         self.__topological_sort() # The NN keeps its neurons in topological order
     
     def __str__(self):
@@ -161,6 +170,35 @@ class NeuralNetwork:
         attributes = ", ".join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
         return f"{self.__class__.__name__}({attributes})"
     
+    def predict(self, input:numpy.array, training:bool = False):
+        '''
+        Builds a Neural Network of ABCNeuron's objects from the topology
+        
+        :param input: the input vector for the model
+        :param training: a flag to determine the behaviour of neourons (if to store data for training or not)
+        :return: the network's output vector
+        '''
+        output_vector = numpy.zeros(self.output_size)
+        
+        # The input is forwarded towards the input units
+        feature_index = 0
+        for neuron in self.neurons[0:self.input_size]:
+            print("it should be INPUT, it is in fact: ", neuron.type)
+            neuron.forward(input[feature_index], training)
+            feature_index += 1
+        
+        # The hidden units will now take their predecessors results forwarding the signal throught the network
+        for neuron in self.neurons[self.input_size:self.n_neurons-self.output_size]:
+            print("it should be HIDDEN, it is in fact: ", neuron.type)
+            neuron.forward(training)
+            
+        # The output units will now take their predecessors results producing (returning) teh network's output
+        feature_index = 0
+        for neuron in self.neurons[self.n_neurons-self.output_size:]:
+            print("it should be OUTPUT, it is in fact: ", neuron.type)
+            output_vector[feature_index] = neuron.forward(training)
+            
+        return output_vector
     
     def train(self, ):
         return

@@ -15,8 +15,12 @@ class InputNeuron(ABCNeuron):
         the type of the neuron
     successors : list of neurons
         list of neurons receiving this neuron's outputs
+    n_successors: int
+        number of units linked as successors to this neuron
     output_list : list of float
-        list of the previous output of the neuron
+        list of the previous outputs of the neuron (instance variable exploited to store outputs for training scope)
+    last_predict : float
+        output of the neuron (instance variable exploited for predictions out of training)
     '''
 
     def __init__(self, index:int):
@@ -29,17 +33,24 @@ class InputNeuron(ABCNeuron):
         self.index = index
         self.type = 'input'
         self.successors = [] # list of neurons receiving this neuron's outputs
-        self.output_list = [] # creates the output list        
+        self.n_successors = 0
         
-    def forward(self, input:float):
+        self.output_list = [] # creates the output list (instance variable exploited to store outputs for training scope)
+        self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
+        
+    def forward(self, input:float, training:bool):
         '''
-        Inizializate the input in the net
+        Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
         
-        :param input: Neuron's input value
+        :param input: Neuron's input vector
+        :param training: flag which determines the neuron behaviour in storing data for training
         :return: the Neuron's output
         '''
-        self.output_list.append(input)
-        return input
+        output_value = input
+        if training:
+            self.output_list.append(output_value)
+        else:
+            self.last_predict = output_value
     
     def add_successor(self, neuron):
         '''
@@ -50,6 +61,7 @@ class InputNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.append(neuron)
+        self.n_successors += 1
         neuron.add_predecessor(self)
     
     def extend_successors(self, neurons:list):
@@ -61,6 +73,7 @@ class InputNeuron(ABCNeuron):
         :return: -
         '''
         self.successors.extend(neurons)
+        self.n_successors += len(neurons)
         for successor in neurons:
             successor.add_predecessor(self)
 

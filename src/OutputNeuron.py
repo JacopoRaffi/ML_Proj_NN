@@ -79,7 +79,6 @@ class OutputNeuron(ABCNeuron):
         :return: -
         '''
         self.n_predecessors = len(self.predecessors)
-        self.n_successors = len(self.successors)
         self.w = numpy.random.uniform(rand_range_min, rand_range_max, self.n_predecessors)
         if fan_in:
             self.w = self.w * 2/self.n_predecessors

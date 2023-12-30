@@ -2,7 +2,19 @@ import math
 import numpy
 
 class ActivationFunctions:
-    '''The collections of all implemented activation functions'''
+    '''The collections of all implemented activation functions and related methods'''
+    
+    def derivative(fun:callable, input:float):
+        '''
+        Method which calculates the first order derivative of the given function for the given input
+        
+        :param fun: a differentiable function
+        :param input: the input on which the derivative is calculated
+        :return: fun's derivative calculated on the input
+        '''
+        #TODO estrarre la vettorizzazione per ottimizzare
+        x = numpy.array([input, input+1, input+2])
+        return numpy.gradient(numpy.vectorize(fun)(x), x, edge_order=2)[0]
 
     def identity(input, *args):
         '''

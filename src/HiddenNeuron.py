@@ -31,8 +31,8 @@ class HiddenNeuron(ABCNeuron):
         list of the previous outputs of the neuron (instance variable exploited to store outputs for training scope)
     last_predict : float
         output of the neuron (instance variable exploited for predictions out of training)
-    delta_error : float
-        the delta error calculated in the backpropagation
+    delta_errors : list of float
+        the list of error signals calculated in the backpropagation
 
     '''
 
@@ -61,7 +61,7 @@ class HiddenNeuron(ABCNeuron):
 
         self.output_list = [] # creates the output list (instance variable exploited to store outputs for training scope)
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
-        self.delta_error = None # creates the delta error variable
+        self.delta_errors = [] # the list of error signals calculated in the backpropagation
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
     

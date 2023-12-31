@@ -3,7 +3,6 @@ import numpy
 
 class ActivationFunctions:
     '''The collections of all implemented activation functions and related methods'''
-    #TODO: Decidere come calcolare la derivata (pytorch, numpy, manualmente)
     
     def derivative(fun:callable, input:float, *args):
         '''
@@ -71,11 +70,3 @@ class ActivationFunctions:
         '''
 
         return math.exp(-args[0]*(input**2))
-    
-
-
-if __name__ == '__main__':
-    fun = ActivationFunctions.sigmoid
-    x = 0.2
-
-    print("DERIVATIVE: ", ActivationFunctions.derivative(fun, x, 1), " ", math.exp(-x)/(1+math.exp(-x))**2)

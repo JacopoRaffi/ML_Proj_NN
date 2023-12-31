@@ -4,7 +4,7 @@ import numpy
 class ActivationFunctions:
     '''The collections of all implemented activation functions and related methods'''
     
-    def derivative(fun:callable, input:float):
+    def derivative(fun:callable, input:float, *args):
         '''
         Method which calculates the first order derivative of the given function for the given input
         
@@ -13,8 +13,8 @@ class ActivationFunctions:
         :return: fun's derivative calculated on the input
         '''
         #TODO estrarre la vettorizzazione per ottimizzare
-        x = numpy.array([input, input+1, input+2])
-        return numpy.gradient(numpy.vectorize(fun)(x), x, edge_order=2)[0]
+        x = numpy.array([input-0.0001, input, input+0.0001])
+        return numpy.gradient(numpy.vectorize(fun)(x, *args), x, edge_order=2)[1]
 
     def identity(input, *args):
         '''

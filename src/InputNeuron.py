@@ -17,8 +17,6 @@ class InputNeuron(ABCNeuron):
         list of neurons receiving this neuron's outputs
     n_successors: int
         number of units linked as successors to this neuron
-    output_list : list of float
-        list of the previous outputs of the neuron (instance variable exploited to store outputs for training scope)
     last_predict : float
         output of the neuron (instance variable exploited for predictions out of training)
     '''
@@ -35,21 +33,16 @@ class InputNeuron(ABCNeuron):
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.n_successors = 0
         
-        self.output_list = [] # creates the output list (instance variable exploited to store outputs for training scope)
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
         
-    def forward(self, input:float, training:bool):
+    def forward(self, input:float):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
         
         :param input: Neuron's input vector
-        :param training: flag which determines the neuron behaviour in storing data for training
         :return: the Neuron's output
         '''
-        output_value = input
-        if training:
-            self.output_list.append(output_value)
-        
+        output_value = input     
         self.last_predict = output_value
     
     def add_successor(self, neuron):

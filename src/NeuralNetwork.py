@@ -249,32 +249,38 @@ class NeuralNetwork:
         last_error_decrease_percentage = 1
         last_error = 0
         new_error = 0
-        last_sample_index = 0
+        last_sample_index = -1
+        old_sample_index = -2
         training_set_length = len(training_set)
         minibatch = []
         minibatch_targets = numpy.ndarray((minibatch_size, self.output_size))
         minibatch_outputs = numpy.ndarray((minibatch_size, self.output_size))
         i = 0
         
-        while epochs <= max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
+        while epochs < max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
             if last_error_decrease_percentage <= error_decrease_tolerance:
                 exhausting_patience -= 1
             else:
                 exhausting_patience = patience
                 
-            if (last_sample_index + minibatch_size) > training_set_length:
-                epochs += 1
-                minibatch.extend(training_set[last_sample_index + 1:])
-                minibatch.extend(training_set[0:minibatch_size - (training_set_length - last_sample_index)])
-                last_sample_index = minibatch_size - (training_set_length - last_sample_index)
-            else:
-                minibatch.extend(training_set[last_sample_index + 1: (last_sample_index + minibatch_size)])
-                last_sample_index = (last_sample_index + minibatch_size)
+            if (last_sample_index + minibatch_size) >= training_set_length:
+                if (last_sample_index + 1) < training_set_length: 
+                    minibatch.extend(training_set[last_sample_index + 1:])
                 
+                minibatch.extend(training_set[0:minibatch_size - (training_set_length - last_sample_index) + 1])
+            else:
+                minibatch.extend(training_set[last_sample_index + 1:(last_sample_index + minibatch_size + 1)])
+
+            last_sample_index = (last_sample_index + minibatch_size) % training_set_length
+            print("\n\nLast sample index: ", last_sample_index)
+            #print("Last index + minibatch size: ", last_sample_index + minibatch_size)
+            print("Minibatch size: ", len(minibatch))
+            print("Minibatch: ", minibatch)
+
             i = 0    
             for sample in minibatch:
                 minibatch_outputs[i] = self.predict(sample[0:self.input_size])
-                minibatch_targets[i] = sample[self.input_size:]
+                minibatch_targets[i] = sample[self.input_size:] #OPTIMIZE: prendere i target direttamente dal minibatch
                 self.__backpropagation(sample[self.input_size + 1:])
                 i += 1
                
@@ -284,8 +290,17 @@ class NeuralNetwork:
             if error_function == "mee":
                 new_error = self.__mean_euclidean_error(minibatch_outputs, minibatch_targets)
                 
-            last_error_decrease_percentage = abs(last_error - new_error)/last_error
+            if last_error != 0:
+                last_error_decrease_percentage = abs(last_error - new_error)/last_error
+            
             last_error = new_error
+            minibatch = []
+
+            if (last_sample_index < old_sample_index and old_sample_index != training_set_length-1) or (last_sample_index == training_set_length-1):
+                epochs += 1
+                print("Epoch: ", epochs)
+            
+            old_sample_index = last_sample_index
                 
                 
                 
@@ -309,9 +324,30 @@ if __name__ == '__main__':
                 '7': ['input', 'None', [], ['4', '6']]}
     
     nn = NeuralNetwork(topology, 7, 7, False)
-        
-    mb = numpy.array([[3,2,10], [3,2,10], [3,2,10], [3,2,10], [3,2,10], [3,2,10]])
-    #print(nn.forward(mb))
-    
-    for neuron in nn.neurons:
-        print(neuron.output_list)
+
+    '''TODO: test:
+        1- Topological order; fatto 
+        2- NN predict (neurons forward): fatto
+            2.1- neurons forward.
+        3- NN backpropagation:
+            3.1- neurons backward;
+        4- NN train (neurons update_weights):
+            4.1 - minibatch size;   
+            4.2- mean euclidean error; 
+    '''
+
+    # training set
+    x = numpy.ndarray((10, 5))
+
+    for i in range(10):
+        # f(x1,x2,x3) = [x1^2, x0^2+x2^2] 
+        x[i,0] = i
+        x[i,1] = i+1
+        x[i,2] = i+2
+
+        x[i,3] = x[i,1]**2
+        x[i,4] = x[i,2]**2 + x[i,0]**2
+
+    print("Training set: \n", x)
+
+    nn.train(x, 2, 2, "mee", 0.0001, 10, 0.1, 0.1, 0.1, True)

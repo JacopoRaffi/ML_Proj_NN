@@ -14,7 +14,9 @@ class ActivationFunctions:
         '''
         #TODO estrarre la vettorizzazione per ottimizzare
         x = numpy.array([input-0.0001, input, input+0.0001])
-        return numpy.gradient(numpy.vectorize(fun)(x, *args), x, edge_order=2)[1]
+        y = numpy.array([fun(x_elem, *args) for x_elem in x])
+
+        return numpy.gradient(y, x, edge_order=2)[1]
 
     def identity(input, *args):
         '''

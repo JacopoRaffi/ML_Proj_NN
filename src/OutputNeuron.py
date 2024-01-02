@@ -121,7 +121,6 @@ class OutputNeuron(ABCNeuron):
         if fan_in:
             self.w = self.w * 2/self.n_predecessors
         
-
     def forward(self):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
@@ -136,28 +135,30 @@ class OutputNeuron(ABCNeuron):
             index += 1
                 
         self.net = numpy.inner(self.w, input)
-        output_value = self.f(self.net, *self.f_parameters)
-
-        self.last_predict = output_value
-            
-        return output_value
+        self.last_predict = self.f(self.net, *self.f_parameters)
+        
+        return self.last_predict
     
     def backward(self, target:float):
         '''
         Calculates the Neuron's error contribute for a given learning pattern
         Calculates a partial weight update for the Neuron (Partial Backpropagation)
         
-        :param input: Neuron's input vector
-        :return: the Neuron's output
+        :param target: the Output Unit's target value
+        :return: -
         '''
         
         predecessors_outputs = numpy.zeros(self.n_predecessors)
         index = 0
         
+        self.delta_error = (target - self.last_predict) * ActivationFunctions.derivative(self.f, self.net, self.f_parameters)
+        
         for p in self.predecessors:
             predecessors_outputs[index] = p.last_predict
+            if p.type != "input":
+                p.accumulate_weighted_error(self.delta_error, self.w[index])
+            index += 1
         
-        self.delta_error = (target - self.last_predict) * ActivationFunctions.derivative(self.f, self.net, self.f_parameters)
         self.partial_weight_update = self.partial_weight_update + self.delta_error * predecessors_outputs
         
     def add_predecessor(self, neuron):

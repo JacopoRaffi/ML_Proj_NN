@@ -170,12 +170,11 @@ class NeuralNetwork:
         attributes = ", ".join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
         return f"{self.__class__.__name__}({attributes})"
     
-    def predict(self, input:numpy.array, training:bool = False):
+    def predict(self, input:numpy.array):
         '''
         Compute the output of the network given an input vector
         
         :param input: the input vector for the model
-        :param training: a flag to determine the behaviour of neourons (if to store data for training or not)
         :return: the network's output vector
         '''
         output_vector = numpy.zeros(self.output_size)
@@ -183,35 +182,119 @@ class NeuralNetwork:
         # The input is forwarded towards the input units
         feature_index = 0
         for neuron in self.neurons[0:self.input_size]:
-            neuron.forward(input[feature_index], training)
+            neuron.forward(input[feature_index])
             feature_index += 1
         
         # The hidden units will now take their predecessors results forwarding the signal throught the network
         for neuron in self.neurons[self.input_size:self.n_neurons-self.output_size]:
-            neuron.forward(training)
+            neuron.forward()
             
         # The output units will now take their predecessors results producing (returning) teh network's output
         feature_index = 0
         for neuron in self.neurons[self.n_neurons-self.output_size:]:
-            output_vector[feature_index] = neuron.forward(training)
+            output_vector[feature_index] = neuron.forward()
             feature_index += 1
             
         return output_vector
-    
-    def __forward(self, minibatch:numpy.ndarray):
+          
+    def __backpropagation(self, target:numpy.array):
         '''
-        Compute the output of the network given a minibatch of samples
+        Compute the Backpropagation training algorithm on the NN for a single training pattern
         
-        :param minibatch: a set of samples that will be consumed by the NN
+        :param target: the target vector for the Backprogation iteration
         :return: -
         '''
-        index = 0
-        for sample in minibatch:
-            self.predict(minibatch[index], True)
-            index += 1
+        nn_neuron_index = self.n_neurons -1
+        
+        # The error is calculated in the ouput units and propagated backwards
+        target_index = len(target) - 1
+        while nn_neuron_index >= self.n_neurons-self.output_size:
+            self.neurons[nn_neuron_index].backward(target[target_index])
+            target_index -= 1
+            nn_neuron_index -= 1
+        
+        # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
+        while nn_neuron_index >= self.input_size:
+            self.neurons[nn_neuron_index].backward()
+            nn_neuron_index -= 1
+    
+    def __mean_euclidean_error(self, outputs:numpy.ndarray, targets:numpy.ndarray):
+        return (numpy.sum(numpy.linalg.norm(outputs-targets, axis = 1)))/len(outputs)
+    
+    def train(self, training_set:numpy.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
+        '''
+        Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
+        
+        :param training_set: a set of samples (pattern-target pairs) for supervised learning
+        :param minibatch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
+            -> 1: Online
+            -> 1 < minibatch_size < len(TR): Minibatch with minibatch size equals to minibatch_size
+            -> len(TR): Batch
+        :param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
+        :param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
+            -> "mee": Mean Euclidean Error
+            -> "lms": Least Mean Square
+        :param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
+        :param patience: the number of epochs to wait when a "no more significant error decrease" occurs
+        :param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        :param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        :param alpha_momentum: Momentum Hyperparameter
+        :param nesterov_momentum: if the current training algorithm should exploit Nesterov's Momentum formulation
+        :return: -
+        '''
+        #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
+        
+        epochs = 0
+        exhausting_patience = patience
+        last_error_decrease_percentage = 1
+        last_error = 0
+        new_error = 0
+        last_sample_index = 0
+        training_set_length = len(training_set)
+        minibatch = []
+        minibatch_targets = numpy.ndarray((minibatch_size, self.output_size))
+        minibatch_outputs = numpy.ndarray((minibatch_size, self.output_size))
+        i = 0
+        
+        while epochs <= max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
+            if last_error_decrease_percentage <= error_decrease_tolerance:
+                exhausting_patience -= 1
+            else:
+                exhausting_patience = patience
+                
+            if (last_sample_index + minibatch_size) > training_set_length:
+                epochs += 1
+                minibatch.extend(training_set[last_sample_index + 1:])
+                minibatch.extend(training_set[0:minibatch_size - (training_set_length - last_sample_index)])
+                last_sample_index = minibatch_size - (training_set_length - last_sample_index)
+            else:
+                minibatch.extend(training_set[last_sample_index + 1: (last_sample_index + minibatch_size)])
+                last_sample_index = (last_sample_index + minibatch_size)
+                
+            i = 0    
+            for sample in minibatch:
+                minibatch_outputs[i] = self.predict(sample[0:self.input_size])
+                minibatch_targets[i] = sample[self.input_size:]
+                self.__backpropagation(sample[self.input_size + 1:])
+                i += 1
+               
+            for neuron in self.neurons[self.input_size:]:
+                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum, nesterov_momentum)
+                
+            if error_function == "mee":
+                new_error = self.__mean_euclidean_error(minibatch_outputs, minibatch_targets)
+                
+            last_error_decrease_percentage = abs(last_error - new_error)/last_error
+            last_error = new_error
+                
+                
+                
             
-    def train(self, ):
-        return
+            
+            
+            
+            
+
     
 
 

@@ -92,6 +92,7 @@ class HiddenNeuron(ABCNeuron):
         :param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         :param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         :param alpha_momentum: Momentum Hyperparameter
+        :param nesterov_momentum: if the current training algorithm is exploiting Nesterov's Momentum formulation
         :return: -
         '''
         
@@ -131,13 +132,12 @@ class HiddenNeuron(ABCNeuron):
         if fan_in:
             self.w = self.w * 2/self.n_predecessors
         
-
     def forward(self):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
         
         :param input: Neuron's input vector
-        :return: the Neuron's output
+        :return: -
         '''
         input = numpy.zeros(self.n_predecessors)
         index = 0
@@ -146,32 +146,31 @@ class HiddenNeuron(ABCNeuron):
             index += 1
         
         self.net = numpy.inner(self.w, input)
-        output_value = self.f(self.net, *self.f_parameters)
-        
-        self.last_predict = output_value
+        self.last_predict = self.f(self.net, *self.f_parameters)
      
     def accumulate_weighted_error(self, delta: float, weight: float):
         
         self.partial_successors_weighted_errors += delta * weight
         
-    def backward(self, target:float):
+    def backward(self):
         '''
         Calculates the Neuron's error contribute for a given learning pattern
         Calculates a partial weight update for the Neuron (Partial Backpropagation)
         
-        :param input: Neuron's input vector
-        :return: the Neuron's output
+        :return: -
         '''
         
         predecessors_outputs = numpy.zeros(self.n_predecessors)
-        successors_delta_errors = numpy.zeros(self.n_successors)
         index = 0
+        
+        self.delta_error = self.partial_successors_weighted_errors * ActivationFunctions.derivative(self.f, self.net, self.f_parameters)
         
         for p in self.predecessors:
             predecessors_outputs[index] = p.last_predict
-            
+            if p.type != "input":
+                p.accumulate_weighted_error(self.delta_error, self.w[index])
+            index += 1
         
-        self.delta_error = (target - self.last_predict) * ActivationFunctions.derivative(self.f, self.net, self.f_parameters)
         self.partial_weight_update = self.partial_weight_update + self.delta_error * predecessors_outputs
 
     def add_successor(self, neuron):

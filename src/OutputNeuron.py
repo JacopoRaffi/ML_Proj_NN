@@ -102,6 +102,8 @@ class OutputNeuron(ABCNeuron):
             self.old_weight_update = tmp_old_weight_update
     
         self.w = self.w + self.partial_weight_update - (lambda_tikhonov * self.w)
+
+        print("NEW WEIGHTS: ", self.w)
         
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool):
@@ -159,8 +161,12 @@ class OutputNeuron(ABCNeuron):
                 p.accumulate_weighted_error(self.delta_error, self.w[index])
             index += 1
         
-        self.partial_weight_update = self.partial_weight_update + self.delta_error * predecessors_outputs
-        
+        #print("INDEX: ", self.index, " ", "TYPE: ", self.type)
+        #print("DELTA ERROR: ", self.delta_error)
+        self.partial_weight_update = self.partial_weight_update + (self.delta_error * predecessors_outputs)
+        #print("Predecessors outputs: ", predecessors_outputs)
+        #print("NEW Partial weight update: ", self.partial_weight_update)
+    
     def add_predecessor(self, neuron):
         '''
         Adds a neuron to the list of the Neuron's predecessors

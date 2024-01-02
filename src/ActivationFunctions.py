@@ -16,7 +16,7 @@ class ActivationFunctions:
         x = numpy.array([input-0.0001, input, input+0.0001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
 
-        return numpy.gradient(y, x, edge_order=2)[1]
+        return 1 #numpy.gradient(y, x, edge_order=2)[1]
 
     def identity(input, *args):
         '''
@@ -36,7 +36,6 @@ class ActivationFunctions:
         :param args[0]: the slope parameter of the sigmoid function
         :return: the results of the sigmoid function
         '''
-
         return 1/(1 + math.exp(-(input*args[0])))
     
     def tanh(input, *args):

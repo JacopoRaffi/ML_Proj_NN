@@ -4,6 +4,7 @@ from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
 from ActivationFunctions import ActivationFunctions
 import numpy
+import random
 
 
 class NeuralNetwork:
@@ -209,17 +210,31 @@ class NeuralNetwork:
         # The error is calculated in the ouput units and propagated backwards
         target_index = len(target) - 1
         while nn_neuron_index >= self.n_neurons-self.output_size:
+            #print("Back Index:", self.neurons[nn_neuron_index].index)
             self.neurons[nn_neuron_index].backward(target[target_index])
             target_index -= 1
             nn_neuron_index -= 1
         
         # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
         while nn_neuron_index >= self.input_size:
+            #print("Back Index:", self.neurons[nn_neuron_index].index)
             self.neurons[nn_neuron_index].backward()
             nn_neuron_index -= 1
     
     def __mean_euclidean_error(self, outputs:numpy.ndarray, targets:numpy.ndarray):
-        return (numpy.sum(numpy.linalg.norm(outputs-targets, axis = 1)))/len(outputs)
+        '''
+        Compute the Mean Euclidean Error between the network's outputs and the targets
+        
+        :param outputs: the network's outputs
+        :param targets: the targets
+
+        :return: the Mean Euclidean Error
+        '''
+        norm = numpy.linalg.norm(outputs-targets, axis = 1)
+        sum = numpy.sum(norm)
+        output_length = len(outputs)
+
+        return sum/output_length
     
     def train(self, training_set:numpy.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
         '''
@@ -243,7 +258,7 @@ class NeuralNetwork:
         :return: -
         '''
         #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
-        
+        #TODO: call function nesterev momentum
         epochs = 0
         exhausting_patience = patience
         last_error_decrease_percentage = 1
@@ -272,33 +287,31 @@ class NeuralNetwork:
                 minibatch.extend(training_set[last_sample_index + 1:(last_sample_index + minibatch_size + 1)])
 
             last_sample_index = (last_sample_index + minibatch_size) % training_set_length
-            print("\n\nLast sample index: ", last_sample_index)
-            #print("Last index + minibatch size: ", last_sample_index + minibatch_size)
-            print("Minibatch size: ", len(minibatch))
-            print("Minibatch: ", minibatch)
 
             i = 0    
             for sample in minibatch:
                 minibatch_outputs[i] = self.predict(sample[0:self.input_size])
                 minibatch_targets[i] = sample[self.input_size:] #OPTIMIZE: prendere i target direttamente dal minibatch
-                self.__backpropagation(sample[self.input_size + 1:])
+                self.__backpropagation(sample[self.input_size:])
                 i += 1
                
             for neuron in self.neurons[self.input_size:]:
                 neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum, nesterov_momentum)
+
                 
             if error_function == "mee":
                 new_error = self.__mean_euclidean_error(minibatch_outputs, minibatch_targets)
-                
+
+
             if last_error != 0:
                 last_error_decrease_percentage = abs(last_error - new_error)/last_error
-            
+
+            print(f"Error: {new_error} - Error Decrease: {last_error_decrease_percentage}")            
             last_error = new_error
             minibatch = []
 
             if (last_sample_index < old_sample_index and old_sample_index != training_set_length-1) or (last_sample_index == training_set_length-1):
                 epochs += 1
-                print("Epoch: ", epochs)
             
             old_sample_index = last_sample_index
                 
@@ -316,15 +329,23 @@ class NeuralNetwork:
 if __name__ == '__main__':
     topology = {'0': ['input', 'None', [], ['2', '3', '4', '5']], 
                 '1': ['input', 'None', [], ['2', '3', '4', '6']],
-                '2': ['hidden', 'identity', [], ['5', '6', '4']],
-                '3': ['hidden', 'identity', [], ['5', '6']],
-                '4': ['hidden', 'identity', [], ['5', '6']],
+                '2': ['hidden', 'sigmoid', ['1'], ['5', '6']],
+                '3': ['hidden', 'sigmoid', ['1'], ['5', '6']],
+                '4': ['hidden', 'sigmoid', ['1'], ['5', '6']],
                 '5': ['output', 'identity', [], []],
                 '6': ['output', 'identity', [], []],
                 '7': ['input', 'None', [], ['4', '6']]}
     
-    nn = NeuralNetwork(topology, 7, 7, False)
-
+    topology_tmp = {'0': ['input', 'None', [], ['3', '4']], 
+                    '1': ['input', 'None', [], ['3', '4']],
+                    '2': ['input', 'None', [], ['3', '4']],
+                    '3': ['output', 'identity', [], []],
+                    '4': ['output', 'identity', [], []]}
+    
+    nn = NeuralNetwork(topology, -0.7, 0.7, True)
+    for neuron in nn.neurons:
+        print(neuron.index, " ")
+    
     '''TODO: test:
         1- Topological order; fatto 
         2- NN predict (neurons forward): fatto
@@ -337,17 +358,22 @@ if __name__ == '__main__':
     '''
 
     # training set
-    x = numpy.ndarray((10, 5))
+    x = numpy.ndarray((100, 5))
 
-    for i in range(10):
-        # f(x1,x2,x3) = [x1^2, x0^2+x2^2] 
+    for i in range(100):
+        # f(x1,x2,x3) = [x2^2, x1^2+x3^2] 
         x[i,0] = i
         x[i,1] = i+1
         x[i,2] = i+2
 
-        x[i,3] = x[i,1]**2
-        x[i,4] = x[i,2]**2 + x[i,0]**2
+        x[i,3] = x[i,0] + x[i,1] + x[i,2]
+        x[i,4] = (x[i,3]/3)
+    
+    random.shuffle(x)
 
-    print("Training set: \n", x)
+    #print("Training set: \n", x)
 
-    nn.train(x, 2, 2, "mee", 0.0001, 10, 0.1, 0.1, 0.1, True)
+    #print("Training set: \n", x)
+
+    nn.train(x, 1, 500, "mee", 0.001, 10, 0.00001, 0.001, 0.01, False)
+    print(nn.predict(numpy.array([1,2,3])))

@@ -65,7 +65,7 @@ class HiddenNeuron(ABCNeuron):
         self.f = activation_fun # activation function
         self.f_parameters = list(*args) # creates the list for the additional (optional) parameters of the activation function
         self.net = 0.0 # inner product between the weight vector and the unit's input at a given iteration
-
+        
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
         self.last_delta_error = 0.0 # the list of error signals calculated in the backpropagation
         self.partial_weight_update = numpy.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
@@ -149,8 +149,11 @@ class HiddenNeuron(ABCNeuron):
         self.last_predict = self.f(self.net, *self.f_parameters)
      
     def accumulate_weighted_error(self, delta: float, weight: float):
-        
-        self.partial_successors_weighted_errors += delta * weight
+        '''
+
+        '''
+        #print("ID: ", self.index, "WEIGHT ACCUMULATE")
+        self.partial_successors_weighted_errors += (delta * weight)
         
     def backward(self):
         '''
@@ -163,15 +166,18 @@ class HiddenNeuron(ABCNeuron):
         predecessors_outputs = numpy.zeros(self.n_predecessors)
         index = 0
         
-        self.delta_error = self.partial_successors_weighted_errors * ActivationFunctions.derivative(self.f, self.net, self.f_parameters)
+        self.delta_error = self.partial_successors_weighted_errors * ActivationFunctions.derivative(self.f, self.net, *self.f_parameters)
         
         for p in self.predecessors:
             predecessors_outputs[index] = p.last_predict
+            print("Predecessors output: ", p.last_predict)
             if p.type != "input":
                 p.accumulate_weighted_error(self.delta_error, self.w[index])
             index += 1
         
-        self.partial_weight_update = self.partial_weight_update + self.delta_error * predecessors_outputs
+        #print("INDEX: ", self.index, " ", "TYPE: ", self.type)
+        #print("DELTA ERROR: ", self.delta_error)
+        self.partial_weight_update = self.partial_weight_update + (self.delta_error * predecessors_outputs)
 
     def add_successor(self, neuron):
         '''
@@ -222,28 +228,3 @@ class HiddenNeuron(ABCNeuron):
         '''
         self.output_list = []
         self.delta_error = None
-
-    
-            
-
-if __name__ == "__main__":
-    import random
-
-    for i in range(1000):
-        fun = random.choice((ActivationFunctions.gaussian, ActivationFunctions.identity, ActivationFunctions.sigmoid,
-                         ActivationFunctions.tanh, ActivationFunctions.softplus))
-        neuron = HiddenNeuron(11, -0.7, 0.7, False, fun, 2)
-        w = neuron.w
-        x = numpy.random.rand(11)
-        y = numpy.inner(w, x)
-        forward = neuron.forward(x)
-        fun_out = fun(y, 2)
-        print("INPUT: ", y, "NEURON: ", forward, "NOT NEURON: ", fun_out, '\t', forward==fun_out)
-    for i in range(25):
-        w = neuron.w
-        x = numpy.random.rand(11)
-        y = numpy.inner(w, x)
-        forward = neuron.forward(x)
-        fun_out = fun(y, 2)
-        print("INPUT: ", y, "NEURON: ", forward, "NOT NEURON: ", fun_out, '\t', forward==fun_out)
-    print(neuron)

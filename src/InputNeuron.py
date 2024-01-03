@@ -70,13 +70,5 @@ class InputNeuron(ABCNeuron):
         for successor in neurons:
             successor.add_predecessor(self)
 
-    def reset_neuron_history(self):
-        '''
-        Resets the history of the neuron by clearing the list of previous outputs
-        
-        :return: -
-        '''
-        self.output_list = []
-
     
             

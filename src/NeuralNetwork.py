@@ -5,7 +5,13 @@ from OutputNeuron import OutputNeuron
 from ActivationFunctions import ActivationFunctions
 import numpy
 import random
+import matplotlib.pyplot as plt
+import networkx as nx
 
+
+# TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
+# TODO: nesterov momentum
+# TODO: fare in modo che la rete si salvi errori vari e valori utili nel traning per analisi
 
 class NeuralNetwork:
     '''
@@ -22,12 +28,50 @@ class NeuralNetwork:
     
     '''
 
+
+    def display_topology(topology):
+        '''
+        Function to vsualize a simple topology, if there are more then one hidden layer, the visualization is bad...
+        '''
+        G = {}
+        layer = {'hidden':2, 'input':1, 'output':3}
+
+        for key in topology:
+            G[key] = []
+            for i in topology[key][3]:
+                G[key].append(i)
+        
+        G = nx.DiGraph(G)
+        # Assegnazione delle parti ai nodi
+        for node, data in G.nodes(data=True):
+            data['subset'] = layer[topology[node][0]]
+
+        # Calcolo del layout multipartito
+        pos = nx.multipartite_layout(G, subset_key='subset', align='horizontal')
+
+        # Creazione della visualizzazione del grafo multipartito
+        nx.draw(G, pos, with_labels=True, node_size=500, node_color='skyblue', font_weight='bold', arrows=True)
+
+        # Mostra il grafo
+        plt.show()
+
+
+    def __str__(self):
+        '''
+        Return a string that describe the internal state of the neuron
+        
+        :return: the description of the internal rapresentation
+        '''
+        attributes = ',   .. . .'.join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
+        return f"{self.__class__.__name__}({attributes})"  
+    
     def __get_function_from_string(self, name:str):
         '''
         Map the function name to the corresponding callable variable
         
-        :param name: the name of the function to map
-        :return: the function corrisponding to the name as a callable
+        param name: the name of the function to map
+
+        return: the function corrisponding to the name as a callable
         '''
         if name == 'identity':
             fun = ActivationFunctions.identity
@@ -53,11 +97,12 @@ class NeuralNetwork:
         '''
         Builds a Neural Network of ABCNeuron's objects from the topology
         
-        :param topology: the graph structure described by a dictionary (see __init__ comments)
-        :param rand_range_min: minimum value for random weights initialisation range
-        :param rand_range_max: maximum value for random weights initialisation range
-        :param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
-        :return: the list of Neurons that compose the Neural Network
+        param topology: the graph structure described by a dictionary (see __init__ comments)
+        param rand_range_min: minimum value for random weights initialisation range
+        param rand_range_max: maximum value for random weights initialisation range
+        param fan_in: if the weights initialisation should also consider the Neuron's fan-in
+
+        return: the list of Neurons that compose the Neural Network
         '''
         units = []
         unit_type = ''
@@ -68,7 +113,8 @@ class NeuralNetwork:
         
         # All Neurons are initialised without synapses (successors/predecessors dependencies)
         for node in topology:
-            unit_index = int(node)
+            unit_index = int(node) # TODO qua se i neuroni sono lettere scoppia? se si basta cambiarlo in modo che dia lui un numero ad ogni neurone e via
+            # TODO non solo, devono partire da 0 ed essere gli indici dell'array... assunzioni un po traballanti...
             unit_type = topology[node][0]
             unit_activation_function = topology[node][1]
             unit_activation_function_args = [float(a) for a in topology[node][2]]
@@ -84,7 +130,7 @@ class NeuralNetwork:
                 self.output_size += 1
                 units.append(OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
             
-        # All Neurons' dependecies of successors and predecessors are filled inside the objects
+        # All Neurons dependecies of successors and predecessors are filled inside the objects
         for node in topology:
             unit_type = topology[node][0]
             
@@ -103,10 +149,11 @@ class NeuralNetwork:
         '''
         Recursive function that builds the topological(inverse) order updating ordered list 
         
-        :param: index: the index of the neuron to visit
-        :param: visited: the list of visited neurons
-        :param: ordered: the list of ordered neurons (inverse topological order)
-        :return: -
+        param: index: the index of the neuron to visit
+        param: visited: the list of visited neurons
+        param: ordered: the list of ordered neurons (inverse topological order)
+
+        return: -
         '''
         visited[index] = True
         
@@ -121,8 +168,9 @@ class NeuralNetwork:
         '''
         Sort on a topological order the neurons of the Neural Network
         
-        :param: -
-        :return: -
+        param: -
+
+        return: -
         '''
 
         visited = [False]*self.n_neurons
@@ -138,7 +186,7 @@ class NeuralNetwork:
         '''
         Neural Network inizialization
         
-        :param topology: the graph structure is described by a dictionary that has a key for each unit in the network, 
+        param topology: the graph structure is described by a dictionary that has a key for each unit in the network, 
             and for each key contains a list of unit type (input, hidden, output), activation function, parameters of activation functions
             and list of nodes where an outgoing arc terminates.
             
@@ -150,10 +198,11 @@ class NeuralNetwork:
                  '5': ['output', 'identity', [fun_args...], []],
                  '6': ['output', 'identity', [fun_args...], []]}
 
-        :param: rand_range_min: minimum value for random weights initialisation range
-        :param: rand_range_max: maximum value for random weights initialisation range
-        :param: fan_in: if the weights'initialisation should also consider the Neuron's fan-in
-        :return: -
+        param: rand_range_min: minimum value for random weights initialisation range
+        param: rand_range_max: maximum value for random weights initialisation range
+        param: fan_in: if the weights'initialisation should also consider the Neuron's fan-in
+
+        return: -
         '''
 
         self.input_size = 0
@@ -166,10 +215,11 @@ class NeuralNetwork:
         '''
         Return a string that describe the internal state of the neural network
         
-        :return: the description of the internal rapresentation
+        return: the description of the internal rapresentation
         '''
-        attributes = ", ".join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
-        return f"{self.__class__.__name__}({attributes})"
+        attributes = vars(self)  # Get a dictionary of instance attributes
+        attributes_str = "\n".join([f"{key}: {str(value)}" for key, value in attributes.items()])
+        return f"Instance Attributes:\n{attributes_str}"
     
     def predict(self, input:numpy.array):
         '''
@@ -240,25 +290,29 @@ class NeuralNetwork:
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
-        :param training_set: a set of samples (pattern-target pairs) for supervised learning
-        :param minibatch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
+        param training_set: a set of samples (pattern-target pairs) for supervised learning
+        param minibatch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
             -> 1: Online
             -> 1 < minibatch_size < len(TR): Minibatch with minibatch size equals to minibatch_size
             -> len(TR): Batch
-        :param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
-        :param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
+        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
+        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
             -> "mee": Mean Euclidean Error
             -> "lms": Least Mean Square
-        :param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
-        :param patience: the number of epochs to wait when a "no more significant error decrease" occurs
-        :param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        :param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        :param alpha_momentum: Momentum Hyperparameter
-        :param nesterov_momentum: if the current training algorithm should exploit Nesterov's Momentum formulation
-        :return: -
+        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
+        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
+        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        param alpha_momentum: Momentum Hyperparameter
+        param nesterov_momentum: if the current training algorithm should exploit Nesterov's Momentum formulation
+
+        return: -
         '''
         #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
         #TODO: call function nesterev momentum
+
+        # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
+        # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
         epochs = 0
         exhausting_patience = patience
         last_error_decrease_percentage = 1
@@ -306,7 +360,7 @@ class NeuralNetwork:
             if last_error != 0:
                 last_error_decrease_percentage = abs(last_error - new_error)/last_error
 
-            print(f"Error: {new_error} - Error Decrease: {last_error_decrease_percentage}")            
+            #print(f"Error: {new_error} - Error Decrease: {last_error_decrease_percentage}")            
             last_error = new_error
             minibatch = []
 
@@ -314,11 +368,8 @@ class NeuralNetwork:
                 epochs += 1
             
             old_sample_index = last_sample_index
-                
-                
-                
-            
-            
+
+            print(self.predict(numpy.array([2,2,2])))
             
             
             
@@ -327,53 +378,35 @@ class NeuralNetwork:
 
 
 if __name__ == '__main__':
-    topology = {'0': ['input', 'None', [], ['2', '3', '4', '5']], 
-                '1': ['input', 'None', [], ['2', '3', '4', '6']],
-                '2': ['hidden', 'sigmoid', ['1'], ['5', '6']],
-                '3': ['hidden', 'sigmoid', ['1'], ['5', '6']],
-                '4': ['hidden', 'sigmoid', ['1'], ['5', '6']],
-                '5': ['output', 'identity', [], []],
-                '6': ['output', 'identity', [], []],
-                '7': ['input', 'None', [], ['4', '6']]}
     
-    topology_tmp = {'0': ['input', 'None', [], ['3', '4']], 
-                    '1': ['input', 'None', [], ['3', '4']],
-                    '2': ['input', 'None', [], ['3', '4']],
-                    '3': ['output', 'identity', [], []],
-                    '4': ['output', 'identity', [], []]}
+    topology = {'0': ['input', 'None', [], ['3', '4', '5']], 
+                '1': ['input', 'None', [], ['3', '4', '5']],
+                '2': ['input', 'None', [], ['3', '4', '5']],
+
+                '3': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
+                '4': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
+                '5': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
+
+                '6': ['output', 'identity', ['3','4','5'], []],
+                '7': ['output', 'identity', ['3','4','5'], []]}
     
     nn = NeuralNetwork(topology, -0.7, 0.7, True)
-    for neuron in nn.neurons:
-        print(neuron.index, " ")
-    
-    '''TODO: test:
-        1- Topological order; fatto 
-        2- NN predict (neurons forward): fatto
-            2.1- neurons forward.
-        3- NN backpropagation:
-            3.1- neurons backward;
-        4- NN train (neurons update_weights):
-            4.1 - minibatch size;   
-            4.2- mean euclidean error; 
-    '''
+    NeuralNetwork.display_topology(topology)
+    print(nn)
 
     # training set
-    x = numpy.ndarray((100, 5))
+    x = numpy.ndarray((200, 5))
 
-    for i in range(100):
+    for i in range(200):
         # f(x1,x2,x3) = [x2^2, x1^2+x3^2] 
         x[i,0] = i
         x[i,1] = i+1
         x[i,2] = i+2
 
-        x[i,3] = x[i,0] + x[i,1] + x[i,2]
-        x[i,4] = (x[i,3]/3)
+        x[i,3] = x[i,0] + x[i,1]
+        x[i,4] = x[i,2] + 3
     
     random.shuffle(x)
 
-    #print("Training set: \n", x)
-
-    #print("Training set: \n", x)
-
-    nn.train(x, 1, 500, "mee", 0.001, 10, 0.00001, 0.001, 0.01, False)
+    nn.train(x, 1, 500, "mee", 0.001, 5, 0.00001, 0.001, 0.01, False)
     print(nn.predict(numpy.array([1,2,3])))

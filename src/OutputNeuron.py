@@ -103,7 +103,7 @@ class OutputNeuron(ABCNeuron):
     
         self.w = self.w + self.partial_weight_update - (lambda_tikhonov * self.w)
 
-        print("NEW WEIGHTS: ", self.w)
+        #print("NEW WEIGHTS: ", self.w)
         
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool):
@@ -176,20 +176,13 @@ class OutputNeuron(ABCNeuron):
         '''
         self.predecessors.append(neuron)
 
-    def extend_predecessors(self, neurons:list):
+
+    # TODO: eliminare?
+    #def extend_predecessors(self, neurons:list):
         '''
         Extends the list of the Neuron's predecessors
         
         :param neurons: the list of Neurons to add to the list of predecessors
         :return: -
         '''
-        self.predecessors.extend(neurons)
-
-    def reset_neuron_history(self):
-        '''
-        Resets the history of the neuron by clearing the list of previous outputs and the delta error
-        
-        :return: -
-        '''
-        self.output_list = []
-        self.delta_error = None 
+        #self.predecessors.extend(neurons)

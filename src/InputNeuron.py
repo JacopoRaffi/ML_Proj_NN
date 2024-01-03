@@ -25,8 +25,9 @@ class InputNeuron(ABCNeuron):
         '''
         Neuron initialisation
 
-        :param index: the index of the neuron in the NN
-        :return: -
+        param index: the index of the neuron in the NN
+
+        return: -
         '''
         self.index = index
         self.type = 'input'
@@ -39,8 +40,9 @@ class InputNeuron(ABCNeuron):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
         
-        :param input: Neuron's input vector
-        :return: the Neuron's output
+        param input: Neuron's input vector
+
+        return: the Neuron's output
         '''
         output_value = input     
         self.last_predict = output_value
@@ -50,8 +52,9 @@ class InputNeuron(ABCNeuron):
         Adds a neuron to the list of the Neuron's successors and
         update the predecessors' list of the successor neuron with the current neuron
         
-        :param neuron: the Neuron to add to the list of successors
-        :return: -
+        param neuron: the Neuron to add to the list of successors
+
+        return: -
         '''
         self.successors.append(neuron)
         self.n_successors += 1
@@ -62,8 +65,9 @@ class InputNeuron(ABCNeuron):
         Extends the list of the Neuron's successors and
         update the predecessors' list of the successors neurons with the current neuron
         
-        :param neurons: the list of Neurons to add to the list of successors
-        :return: -
+        param neurons: the list of Neurons to add to the list of successors
+        
+        return: -
         '''
         self.successors.extend(neurons)
         self.n_successors += len(neurons)

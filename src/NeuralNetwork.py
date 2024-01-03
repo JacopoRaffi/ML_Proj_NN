@@ -64,7 +64,8 @@ class NeuralNetwork:
         '''
         attributes = ',   .. . .'.join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
         return f"{self.__class__.__name__}({attributes})"  
-    
+
+
     def __get_function_from_string(self, name:str):
         '''
         Map the function name to the corresponding callable variable
@@ -286,7 +287,7 @@ class NeuralNetwork:
 
         return sum/output_length
     
-    def train(self, training_set:numpy.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
+    def train(self, training_set:numpy.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -304,7 +305,6 @@ class NeuralNetwork:
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
-        param nesterov_momentum: if the current training algorithm should exploit Nesterov's Momentum formulation
 
         return: -
         '''
@@ -325,6 +325,20 @@ class NeuralNetwork:
         minibatch_targets = numpy.ndarray((minibatch_size, self.output_size))
         minibatch_outputs = numpy.ndarray((minibatch_size, self.output_size))
         i = 0
+
+        # initializing the dict where collect stats of the training
+        stats = {
+            'minibatch_size':minibatch_size,
+            'epochs':0,
+            'mee':[],
+            'units_outputs':{},
+            'units_error':{},
+            'units_weights_updates' : {}
+        }
+        for unit in self.neurons:
+            stats['units_outputs'][unit] = []
+            stats['units_error'][unit] = []
+            stats['units_weights_updates'][unit] = []
         
         while epochs < max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
             if last_error_decrease_percentage <= error_decrease_tolerance:
@@ -350,7 +364,7 @@ class NeuralNetwork:
                 i += 1
                
             for neuron in self.neurons[self.input_size:]:
-                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum, nesterov_momentum)
+                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
 
                 
             if error_function == "mee":

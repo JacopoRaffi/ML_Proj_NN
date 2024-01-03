@@ -68,7 +68,7 @@ class HiddenNeuron(ABCNeuron):
         self.net = 0.0 # inner product between the weight vector and the unit's input at a given iteration
         
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
-        self.delta_error = 0.0 # the error signals calculated in the backpropagation
+        self.delta_error = 0.0 # the error signal calculated in the backpropagation
         self.partial_weight_update = numpy.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
         self.old_weight_update = numpy.array([]) # the old weight update value DeltaW
         self.partial_successors_weighted_errors = 0.0 # the partial sum of successors' errors values weighted by the weight of the link bethween the two units
@@ -99,10 +99,7 @@ class HiddenNeuron(ABCNeuron):
         '''
 
         # here we compute the weight update if the momentum is used or not
-        if alpha_momentum > 0:
-            weight_update = (learning_rate * self.partial_weight_update) + (alpha_momentum * self.old_weight_update)
-        else:
-            weight_update = learning_rate * self.partial_weight_update
+        weight_update = (learning_rate * self.partial_weight_update) + (alpha_momentum * self.old_weight_update)
         
         # the weight_update value is calculated separated from Tikhonov Regularization for code/concept cleanliness
         self.w += weight_update - (lambda_tikhonov * self.w)
@@ -225,7 +222,7 @@ class HiddenNeuron(ABCNeuron):
         Adds a neuron to the list of the Neuron's predecessors
         
         param neuron: the Neuron to add to the list of predecessors
-        
+
         return: -
         '''
         self.predecessors.append(neuron)

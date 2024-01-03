@@ -16,7 +16,7 @@ class ActivationFunctions:
         x = numpy.array([input-0.0001, input, input+0.0001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
 
-        return 1 #numpy.gradient(y, x, edge_order=2)[1]
+        return numpy.gradient(y, x, edge_order=2)[1]
 
     def identity(input, *args):
         '''

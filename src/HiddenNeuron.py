@@ -140,12 +140,13 @@ class HiddenNeuron(ABCNeuron):
         return: -
         '''
         input = np.empty(self.n_predecessors + 1)#np.zeros(self.n_predecessors + 1) # bias
-        input[0] = 1 #bias
+        input[0] = 1 # bias
         for index, p in enumerate(self.predecessors):
             input[index + 1] = p.last_predict
 
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
+        print(self.index, self.last_predict)
      
     def accumulate_weighted_error(self, delta: float, weight: float):
         '''
@@ -176,7 +177,6 @@ class HiddenNeuron(ABCNeuron):
         predecessors_outputs[0] = 1 # bias
         for index, p in enumerate(self.predecessors):
             predecessors_outputs[index + 1] = p.last_predict # bias
-            #print("Predecessors output: ", p.last_predict)
             if p.type != "input":
                 p.accumulate_weighted_error(self.delta_error, self.w[index + 1]) # bias
 

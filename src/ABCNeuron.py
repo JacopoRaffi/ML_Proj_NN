@@ -24,6 +24,3 @@ class ABCNeuron(ABC):
 
 
         return f"{self.__class__.__name__}({attributes})"
-    
-    def forward(self, input):
-        pass

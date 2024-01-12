@@ -3,6 +3,7 @@ from InputNeuron import InputNeuron
 from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
 from ActivationFunctions import ActivationFunctions
+from ErrorFunctions import ErrorFunctions
 import numpy as np
 import pandas as pd
 import random
@@ -28,22 +29,6 @@ class NeuralNetwork:
         the list of neurons, sorted in topological order, composing the NN
     
     '''
-
-    def __mean_euclidean_error(outputs:np.ndarray, targets:np.ndarray):
-        '''
-        Compute the Mean Euclidean Error between the network's outputs and the targets
-        
-        :param outputs: the network's outputs
-        :param targets: the targets
-
-        :return: the Mean Euclidean Error
-        '''
-        norm = np.linalg.norm(outputs-targets, axis = 1)
-        sum = np.sum(norm)
-        output_length = len(outputs)
-
-        return sum/output_length
-    
 
     def display_topology(topology):
         '''
@@ -258,7 +243,6 @@ class NeuralNetwork:
 
     def predict_array(self, input:np.array):
 
-
         output = np.empty((len(input), self.output_size))
         for i, el in enumerate(input):
             output[i] = self.predict(el)
@@ -366,7 +350,7 @@ class NeuralNetwork:
         
 
         # to save the starting weights and error
-        new_error = NeuralNetwork.__mean_euclidean_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+        new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
         if last_error != 0:
             last_error_decrease_percentage = abs(last_error - new_error)/last_error    
         last_error = new_error     
@@ -396,7 +380,7 @@ class NeuralNetwork:
                 epochs += 1
                 batch_index = batch_index%training_set_length
 
-                new_error = NeuralNetwork.__mean_euclidean_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                 if last_error != 0:
                     last_error_decrease_percentage = abs(last_error - new_error)/last_error    
                 last_error = new_error

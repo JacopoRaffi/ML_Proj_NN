@@ -47,9 +47,9 @@ class InputNeuron(ABCNeuron):
         param input: Neuron's input vector
 
         return: the Neuron's output
-        '''
-        output_value = input     
-        self.last_predict = output_value
+        '''   
+        self.last_predict = input
+        #print(self.index, self.last_predict)
     
     def add_successor(self, neuron):
         '''

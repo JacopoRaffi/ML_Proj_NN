@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 from ActivationFunctions import ActivationFunctions
 
 from ABCNeuron import ABCNeuron
@@ -42,7 +42,7 @@ class HiddenNeuron(ABCNeuron):
 
     '''
 
-    def __init__(self, index:int, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
+    def __init__(self, index:int, activation_fun:callable = ActivationFunctions.sigmoid,  *args):
         '''
         Neuron initialisation
         
@@ -62,15 +62,15 @@ class HiddenNeuron(ABCNeuron):
         self.n_predecessors = 0
         self.successors = [] # list of neurons receiving this neuron's outputs
         self.n_successors = 0
-        self.w = numpy.array([]) # weights vector (initialised later)
+        self.w = np.array([]) # weights vector (initialised later)
         self.f = activation_fun # activation function
         self.f_parameters = list(*args) # creates the list for the additional (optional) parameters of the activation function
         self.net = 0.0 # inner product between the weight vector and the unit's input at a given iteration
         
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
         self.delta_error = 0.0 # the error signal calculated in the backpropagation
-        self.partial_weight_update = numpy.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
-        self.old_weight_update = numpy.array([]) # the old weight update value DeltaW
+        self.partial_weight_update = np.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
+        self.old_weight_update = np.array([]) # the old weight update value DeltaW
         self.partial_successors_weighted_errors = 0.0 # the partial sum of successors' errors values weighted by the weight of the link bethween the two units
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
@@ -102,12 +102,16 @@ class HiddenNeuron(ABCNeuron):
         weight_update = (learning_rate * self.partial_weight_update) + (alpha_momentum * self.old_weight_update)
         
         # the weight_update value is calculated separated from Tikhonov Regularization for code/concept cleanliness
-        self.w += weight_update - (lambda_tikhonov * self.w)
+        weight_update = weight_update - (lambda_tikhonov * self.w)
+
+
+        self.w += weight_update
         self.old_weight_update = weight_update
+        self.partial_weight_update = np.zeros(self.n_predecessors + 1)
 
         
         
-    def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool):
+    def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
         '''
         Initialises the Neuron's weights vector (w).
         Updates the unit's numbers of predecessors and successors (the network has already been completely linked together)
@@ -118,11 +122,12 @@ class HiddenNeuron(ABCNeuron):
 
         return: -
         '''
+
         self.n_predecessors = len(self.predecessors)
         self.n_successors = len(self.successors)
-        self.w = numpy.random.uniform(rand_range_min, rand_range_max, self.n_predecessors + 1) # the +1 is to count the bias
-        self.old_weight_update = numpy.zeros(self.n_predecessors + 1) # bias
-        self.partial_weight_update = numpy.zeros(self.n_predecessors + 1) # bias
+        self.w = random_generator.uniform(rand_range_min, rand_range_max, self.n_predecessors + 1) # the +1 is to count the bias
+        self.old_weight_update = np.zeros(self.n_predecessors + 1) # bias
+        self.partial_weight_update = np.zeros(self.n_predecessors + 1) # bias
         if fan_in:
             self.w = self.w * 2/(self.n_predecessors + 1) # TODO magari va tolto il +1 perchè il bias non è da contare
         
@@ -134,12 +139,12 @@ class HiddenNeuron(ABCNeuron):
 
         return: -
         '''
-        input = numpy.zeros(self.n_predecessors)
+        input = np.empty(self.n_predecessors + 1)#np.zeros(self.n_predecessors + 1) # bias
         input[0] = 1 #bias
         for index, p in enumerate(self.predecessors):
             input[index + 1] = p.last_predict
 
-        self.net = numpy.inner(self.w, input)
+        self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
      
     def accumulate_weighted_error(self, delta: float, weight: float):
@@ -163,7 +168,7 @@ class HiddenNeuron(ABCNeuron):
         return: -
         '''
         
-        predecessors_outputs = numpy.zeros(self.n_predecessors + 1) # bias
+        predecessors_outputs = np.zeros(self.n_predecessors + 1) # bias
         
         # computing delta error of the unit (before we have accumulated the successor's deltas in 'partial_successors_weighted_errors')
         self.delta_error = self.partial_successors_weighted_errors * ActivationFunctions.derivative(self.f, self.net, *self.f_parameters)
@@ -173,12 +178,12 @@ class HiddenNeuron(ABCNeuron):
             predecessors_outputs[index + 1] = p.last_predict # bias
             #print("Predecessors output: ", p.last_predict)
             if p.type != "input":
-                p.accumulate_weighted_error(self.delta_error, self.w[index + 1])# bias
-            index += 1
+                p.accumulate_weighted_error(self.delta_error, self.w[index + 1]) # bias
+
         
         #print("INDEX: ", self.index, " ", "TYPE: ", self.type)
         #print("DELTA ERROR: ", self.delta_error)
-        self.partial_weight_update += + (self.delta_error * predecessors_outputs)# accumulating weight updates for the batch version
+        self.partial_weight_update += (self.delta_error * predecessors_outputs)# accumulating weight updates for the batch version
 
     def add_successor(self, neuron):
         '''

@@ -3,7 +3,8 @@ from InputNeuron import InputNeuron
 from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
 from ActivationFunctions import ActivationFunctions
-import numpy
+import numpy as np
+import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
@@ -28,6 +29,21 @@ class NeuralNetwork:
     
     '''
 
+    def __mean_euclidean_error(outputs:np.ndarray, targets:np.ndarray):
+        '''
+        Compute the Mean Euclidean Error between the network's outputs and the targets
+        
+        :param outputs: the network's outputs
+        :param targets: the targets
+
+        :return: the Mean Euclidean Error
+        '''
+        norm = np.linalg.norm(outputs-targets, axis = 1)
+        sum = np.sum(norm)
+        output_length = len(outputs)
+
+        return sum/output_length
+    
 
     def display_topology(topology):
         '''
@@ -54,17 +70,6 @@ class NeuralNetwork:
 
         # Mostra il grafo
         plt.show()
-
-
-    def __str__(self):
-        '''
-        Return a string that describe the internal state of the neuron
-        
-        :return: the description of the internal rapresentation
-        '''
-        attributes = ',   .. . .'.join(f"{attr}={getattr(self, attr)}" for attr in vars(self))
-        return f"{self.__class__.__name__}({attributes})"  
-
 
     def __get_function_from_string(self, name:str):
         '''
@@ -94,7 +99,7 @@ class NeuralNetwork:
 
         return fun
 
-    def __construct_from_dict(self, topology:dict, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
+    def __construct_from_dict(self, topology:dict, random_generator:np.random.Generator, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
         '''
         Builds a Neural Network of ABCNeuron's objects from the topology
         
@@ -125,11 +130,11 @@ class NeuralNetwork:
                 units.append(InputNeuron(unit_index))
                 
             elif unit_type == 'hidden':
-                units.append(HiddenNeuron(unit_index, rand_range_min, rand_range_max, fan_in, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
+                units.append(HiddenNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
                 
             elif unit_type == 'output': # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
                 self.output_size += 1
-                units.append(OutputNeuron(unit_index, rand_range_min, rand_range_max, False, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
+                units.append(OutputNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
             
         # All Neurons dependecies of successors and predecessors are filled inside the objects
         for node in topology:
@@ -141,8 +146,10 @@ class NeuralNetwork:
         
         # All Neurons weights vectors are initialised
         for neuron in units:
-            if neuron.type != 'input':
-                neuron.initialise_weights(rand_range_min, rand_range_max, fan_in)
+            if neuron.type == 'output':
+                neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
+            if neuron.type == 'hidden':
+                neuron.initialise_weights(rand_range_min, rand_range_max, fan_in, random_generator)
 
         return units
     
@@ -183,7 +190,7 @@ class NeuralNetwork:
         
         self.neurons = ordered[::-1]
                 
-    def __init__(self, topology:dict = {}, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
+    def __init__(self, topology:dict = {}, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True, random_state:int=None):
         '''
         Neural Network inizialization
         
@@ -208,7 +215,9 @@ class NeuralNetwork:
 
         self.input_size = 0
         self.output_size = 0
-        self.neurons = self.__construct_from_dict(topology, rand_range_min, rand_range_max, fan_in)
+
+        random_genrator = np.random.default_rng(random_state)
+        self.neurons = self.__construct_from_dict(topology, random_genrator, rand_range_min, rand_range_max, fan_in)
         self.n_neurons = len(self.neurons)
         self.__topological_sort() # The NN keeps its neurons in topological order
     
@@ -222,72 +231,186 @@ class NeuralNetwork:
         attributes_str = "\n".join([f"{key}: {str(value)}" for key, value in attributes.items()])
         return f"Instance Attributes:\n{attributes_str}"
     
-    def predict(self, input:numpy.array):
+
+    def predict(self, input:np.array):
         '''
         Compute the output of the network given an input vector
         
         :param input: the input vector for the model
         :return: the network's output vector
         '''
-        output_vector = numpy.zeros(self.output_size)
+        output_vector = np.zeros(self.output_size)
         
         # The input is forwarded towards the input units
-        feature_index = 0
-        for neuron in self.neurons[0:self.input_size]:
+        for feature_index, neuron in enumerate(self.neurons[:self.input_size]):
             neuron.forward(input[feature_index])
-            feature_index += 1
         
         # The hidden units will now take their predecessors results forwarding the signal throught the network
-        for neuron in self.neurons[self.input_size:self.n_neurons-self.output_size]:
+        for neuron in self.neurons[self.input_size:-self.output_size]:
             neuron.forward()
             
         # The output units will now take their predecessors results producing (returning) teh network's output
-        feature_index = 0
-        for neuron in self.neurons[self.n_neurons-self.output_size:]:
+        for feature_index, neuron in enumerate(self.neurons[-self.output_size:]):
             output_vector[feature_index] = neuron.forward()
-            feature_index += 1
             
         return output_vector
+    
+
+    def predict_array(self, input:np.array):
+
+
+        output = np.empty((len(input), self.output_size))
+        for i, el in enumerate(input):
+            output[i] = self.predict(el)
+        return output
           
-    def __backpropagation(self, target:numpy.array):
+    def __backpropagation(self, target:np.array):
         '''
         Compute the Backpropagation training algorithm on the NN for a single training pattern
         
         :param target: the target vector for the Backprogation iteration
         :return: -
         '''
-        nn_neuron_index = self.n_neurons -1
+
+        # The error is calculated in the ouput units and propagated backwards
+        for i, neuron in enumerate(reversed(self.neurons[-self.output_size:])):
+            neuron.backward(target[-(i+1)])
+        # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
+        for neuron in reversed(self.neurons[self.input_size:-self.output_size]):
+            neuron.backward()
         
         # The error is calculated in the ouput units and propagated backwards
-        target_index = len(target) - 1
-        while nn_neuron_index >= self.n_neurons-self.output_size:
+        #target_index = len(target) - 1
+        #while nn_neuron_index >= self.n_neurons-self.output_size:
             #print("Back Index:", self.neurons[nn_neuron_index].index)
-            self.neurons[nn_neuron_index].backward(target[target_index])
-            target_index -= 1
-            nn_neuron_index -= 1
+            #self.neurons[nn_neuron_index].backward(target[target_index])
+            #target_index -= 1
+            #nn_neuron_index -= 1
         
         # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
-        while nn_neuron_index >= self.input_size:
+        #while nn_neuron_index >= self.input_size:
             #print("Back Index:", self.neurons[nn_neuron_index].index)
-            self.neurons[nn_neuron_index].backward()
-            nn_neuron_index -= 1
+            #self.neurons[nn_neuron_index].backward()
+            #nn_neuron_index -= 1
     
-    def __mean_euclidean_error(self, outputs:numpy.ndarray, targets:numpy.ndarray):
+    def train_2(self, training_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
-        Compute the Mean Euclidean Error between the network's outputs and the targets
+        Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
-        :param outputs: the network's outputs
-        :param targets: the targets
+        param training_set: a set of samples (pattern-target pairs) for supervised learning
+        param batch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
+            -> 1: Online
+            -> 1 < batch_size < len(TR): Minibatch with minibatch size equals to batch_size
+            -> len(TR): Batch
+        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
+        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
+            -> "mee": Mean Euclidean Error
+            -> "lms": Least Mean Square
+        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
+        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
+        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        param alpha_momentum: Momentum Hyperparameter
 
-        :return: the Mean Euclidean Error
+        return: -
         '''
-        norm = numpy.linalg.norm(outputs-targets, axis = 1)
-        sum = numpy.sum(norm)
-        output_length = len(outputs)
 
-        return sum/output_length
-    
-    def train(self, training_set:numpy.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+        def circular_index(a, start, stop): 
+            '''
+            start is included
+            stop is NOT included
+            '''
+            # fn to convert your start stop to a wrapped range
+            if stop<=start:
+                stop += len(a)
+            return np.arange(start, stop)%len(a)
+
+        #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
+
+        # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
+        # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
+        epochs = 0
+        exhausting_patience = patience
+        last_error_decrease_percentage = 1
+        last_error = 0
+        new_error = 0
+        training_set_length = len(training_set)
+
+        #minibatch_targets = np.ndarray((batch_size, self.output_size))
+        #minibatch_outputs = np.ndarray((batch_size, self.output_size))
+
+        batch_index = 0
+        if batch_size > training_set_length: batch_size = training_set_length
+
+
+        # initializing the dict where collect stats of the training
+        stats = {
+            # input stats
+            'training_set_len':training_set_length,
+            'minibatch_size':batch_size,
+            'max_epochs':max_epochs,
+            'error_decrease_tolerance':error_decrease_tolerance,
+            'patience':patience,
+            'learning_rate':learning_rate,
+            'lambda_tikhonov':lambda_tikhonov,
+            'alpha_momentum':alpha_momentum,
+
+            # training stats
+            'epochs':0,
+
+            'training_error':[],
+            'units_weights' : {}
+        }
+        for unit in self.neurons[self.input_size:]:
+            stats['units_weights'][unit.index] = []
+        
+
+        # to save the starting weights and error
+        new_error = NeuralNetwork.__mean_euclidean_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+        if last_error != 0:
+            last_error_decrease_percentage = abs(last_error - new_error)/last_error    
+        last_error = new_error     
+        stats['training_error'].append(new_error)
+        for unit in self.neurons[self.input_size:]:
+            stats['units_weights'][unit.index].append(unit.w.copy())
+
+        while epochs < max_epochs and exhausting_patience > 0:
+
+            for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
+                self.predict(sample[:self.input_size])
+                self.__backpropagation(sample[self.input_size:])
+               
+            for neuron in self.neurons[self.input_size:]:
+                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
+                
+            
+            
+            #TODO: per implementare altri errori dobbiamo cambiare la back prop
+            batch_index += batch_size
+            if batch_index >= training_set_length:
+                if last_error_decrease_percentage <= error_decrease_tolerance:
+                    exhausting_patience -= 1
+                else:
+                    exhausting_patience = patience
+
+                epochs += 1
+                batch_index = batch_index%training_set_length
+
+                new_error = NeuralNetwork.__mean_euclidean_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                if last_error != 0:
+                    last_error_decrease_percentage = abs(last_error - new_error)/last_error    
+                last_error = new_error
+
+                # stats for every epoch
+                stats['training_error'].append(new_error)
+                for unit in self.neurons[self.input_size:]:
+                    stats['units_weights'][unit.index].append(unit.w.copy())
+
+        # final stats gathering
+        stats['epochs'] = epochs
+        return stats
+            
+    def train(self, training_set:np.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -321,24 +444,11 @@ class NeuralNetwork:
         last_sample_index = -1
         old_sample_index = -2
         training_set_length = len(training_set)
-        minibatch = []
-        minibatch_targets = numpy.ndarray((minibatch_size, self.output_size))
-        minibatch_outputs = numpy.ndarray((minibatch_size, self.output_size))
-        i = 0
 
-        # initializing the dict where collect stats of the training
-        stats = {
-            'minibatch_size':minibatch_size,
-            'epochs':0,
-            'mee':[],
-            'units_outputs':{},
-            'units_error':{},
-            'units_weights_updates' : {}
-        }
-        for unit in self.neurons:
-            stats['units_outputs'][unit] = []
-            stats['units_error'][unit] = []
-            stats['units_weights_updates'][unit] = []
+        minibatch = []
+        minibatch_targets = np.ndarray((minibatch_size, self.output_size))
+        minibatch_outputs = np.ndarray((minibatch_size, self.output_size))
+        i = 0
         
         while epochs < max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
             if last_error_decrease_percentage <= error_decrease_tolerance:
@@ -383,44 +493,53 @@ class NeuralNetwork:
             
             old_sample_index = last_sample_index
 
-            print(self.predict(numpy.array([2,2,2])))
+            print(self.predict(np.array([2,2,2])))
             
-            
-            
-
-    
-
+        
 
 if __name__ == '__main__':
-    
-    topology = {'0': ['input', 'None', [], ['3', '4', '5']], 
-                '1': ['input', 'None', [], ['3', '4', '5']],
-                '2': ['input', 'None', [], ['3', '4', '5']],
+    def create_dataset(n_items, n_input, input_range, output_functions, seed):
+        random.seed(seed)
 
-                '3': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
-                '4': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
-                '5': ['hidden', 'sigmoid', ['0','1','2'], ['6', '7']],
+        n_output = len(output_functions)
+        x = np.ndarray((n_items, n_input + n_output))
 
-                '6': ['output', 'identity', ['3','4','5'], []],
-                '7': ['output', 'identity', ['3','4','5'], []]}
-    
-    nn = NeuralNetwork(topology, -0.7, 0.7, True)
-    NeuralNetwork.display_topology(topology)
-    print(nn)
+        for i in range(n_items):
+            for l in range(n_input):
+                x[i,l] = random.randrange(input_range[0], input_range[1], input_range[2])
 
-    # training set
-    x = numpy.ndarray((200, 5))
+            for l, fun in enumerate(output_functions):
+                
+                x[i, n_input + l] = fun(x[i][:n_input])
+                #print(x[i][:n_input], fun(x[i][:n_input]), x[i, l])
 
-    for i in range(200):
-        # f(x1,x2,x3) = [x2^2, x1^2+x3^2] 
-        x[i,0] = i
-        x[i,1] = i+1
-        x[i,2] = i+2
+        return pd.DataFrame(x, columns = ['input_' + str(i + 1) for i in range(n_input)] + ['output_' + str(i + 1) for i in range(n_output)])
 
-        x[i,3] = x[i,0] + x[i,1]
-        x[i,4] = x[i,2] + 3
-    
-    random.shuffle(x)
 
-    nn.train(x, 1, 500, "mee", 0.001, 5, 0.00001, 0.001, 0.01, False)
-    print(nn.predict(numpy.array([1,2,3])))
+    topology_2 = {'0': ['input', 'None', [], ['2', '3']],
+                '1': ['input', 'None', [], ['2', '3']], 
+                '2': ['output', 'identity', ['0', '1'], []],
+                '3': ['output', 'identity', ['0', '1'], []]}
+
+    RANDOM_STATE = 12345
+    NN = NeuralNetwork(topology_2, -0.75, 0.75, True, RANDOM_STATE)
+
+    tr_1_input = 2
+    tr_1_output = 2
+    len_dataset = 500
+    tr_1 = create_dataset(len_dataset, tr_1_input, [0, 100, 1], [lambda x : 2*x[0] + x[1] + 4, lambda x : -2*x[0] + x[1] + 1], RANDOM_STATE)
+
+    training_set = tr_1.values
+
+    batch_size = 20
+    max_epochs = 250
+    error_decrease_tolerance = 0.0001
+    patience = 20
+
+    learning_rate = 0.0001/batch_size
+    lambda_tikhonov = 0
+    alpha_momentum = 0
+
+    stats = NN.train_2(training_set, batch_size, max_epochs, error_decrease_tolerance, patience, 
+                    learning_rate, lambda_tikhonov, alpha_momentum)
+    predictions = NN.predict_array(training_set)

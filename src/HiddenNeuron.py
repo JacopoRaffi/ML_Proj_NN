@@ -146,7 +146,6 @@ class HiddenNeuron(ABCNeuron):
 
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
-        print(self.index, self.last_predict)
      
     def accumulate_weighted_error(self, delta: float, weight: float):
         '''

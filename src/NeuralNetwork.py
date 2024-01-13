@@ -15,6 +15,23 @@ import networkx as nx
 # TODO: nesterov momentum
 # TODO: fare in modo che la rete si salvi errori vari e valori utili nel traning per analisi
 
+# TODO: dalle slide
+'''Note that often the bias w0
+is omitted from the regularizer (because
+its inclusion causes the results to be not independent from target
+shift/scaling) or it may be included but with its own regularization
+coefficient (see Bishop book, Hastie et al. book)
+'''
+
+# TODO: dalle slide
+'''For on-line/mini-batch take care of possible effects over many
+steps (patterns/examples): hence to compare w.r.t. batch version in a
+fair way do not force equal lambda but it would be better to use
+            λ x (mb /#total patterns l )
+Of course if you choose lambda by model selection they will automatically select
+different lambda for on-line and batch (or any mini-batch)'''
+
+
 class NeuralNetwork:
     '''
     Implementation of the neural network that includes neurons and all method to use and train the NN
@@ -128,7 +145,7 @@ class NeuralNetwork:
         for node in topology:
             unit_type = topology[node][0]
             
-            if unit_type != 'output': # Output units have no successors
+            if not unit_type.startswith('output'): # Output units have no successors
                 unit_successors = [units[int(u)] for u in topology[node][3]]
                 units[int(node)].extend_successors(unit_successors)
         
@@ -243,7 +260,6 @@ class NeuralNetwork:
             
         return output_vector
     
-
     def predict_array(self, input:np.array):
 
         output = np.empty((len(input), self.output_size))

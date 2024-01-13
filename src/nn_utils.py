@@ -47,33 +47,37 @@ def create_dataset(n_items, n_input, input_range, output_functions, seed):
     return pd.DataFrame(x, columns = ['input_' + str(i + 1) for i in range(n_input)] + ['output_' + str(i + 1) for i in range(n_output)])
 
 
-def create_topology(n_input, hidden_layers, n_output, act_vals = None):
-    top = {}
-    tot_unit = 0
-    for i in range(n_input):
-        top[i] = ['input', 'None', [], [l + n_input for l in range(hidden_layers[0])]]
-        tot_unit += 1
+def create_stratified_topology(layers, act_args = None):
 
-    n_hidden_unit = sum(hidden_layers)
-    if act_vals == None: act_vals = [[0.5]] * n_hidden_unit
-    n_layer = len(hidden_layers)
-    index_unit = n_input
-
-    for i, layer in enumerate(hidden_layers):
-        if i < n_layer - 1:
-            succ = [index_unit + hidden_layers[i] + l for l in range(hidden_layers[i + 1])]
+    orig_layers_len = len(layers)
+    if act_args == None:
+        if orig_layers_len > 2:
+            act_args = [[]] * layers[0] + [[1]] * sum(layers[1:-1]) + [[]] * layers[-1]
         else:
-            succ = [index_unit + hidden_layers[i] + l for l in range(n_output)]
+            act_args = [[]] * layers[0] + [[]] * layers[-1]
 
-        for j in range(layer):
-            top[index_unit + j] = ['hidden_' + str(i), 'sigmoid', act_vals[index_unit + j - n_input], succ]
-        
-        index_unit += hidden_layers[i]
+            
+    index_unit = 0
+    layers.append(0)
+    top = {}
 
+    print(act_args)
+    for i in range(orig_layers_len):
 
+        if i == 0: 
+            unit_type = 'input_'
+            unit_act_fun = None
+        elif i == orig_layers_len - 1: 
+            unit_type = 'output_'
+            unit_act_fun = 'identity'
+        else: 
+            unit_type = 'hidden_'
+            unit_act_fun = 'sigmoid'
 
-    for i in range(n_output):
-        top[index_unit + i] = ['output', 'identity', [], []]
-        tot_unit += 1
+        succ = [index_unit + layers[i] + l for l in range(layers[i + 1])]
+
+        for j in range(layers[i]):
+            top[index_unit + j] = [unit_type + str(i), unit_act_fun, act_args[index_unit + j], succ]
+        index_unit += layers[i]
 
     return top

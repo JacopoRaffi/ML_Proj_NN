@@ -27,6 +27,8 @@ def multy_plot(datas, labels, title, scale='linear'):
     plt.yscale(scale)
     plt.show()
 
+
+# create data structures
 def create_dataset(n_items, n_input, input_range, output_functions, seed):
     random.seed(seed)
 
@@ -44,6 +46,7 @@ def create_dataset(n_items, n_input, input_range, output_functions, seed):
 
     return pd.DataFrame(x, columns = ['input_' + str(i + 1) for i in range(n_input)] + ['output_' + str(i + 1) for i in range(n_output)])
 
+
 def create_topology(n_input, hidden_layers, n_output, act_vals = None):
     top = {}
     tot_unit = 0
@@ -52,7 +55,7 @@ def create_topology(n_input, hidden_layers, n_output, act_vals = None):
         tot_unit += 1
 
     n_hidden_unit = sum(hidden_layers)
-    if act_vals == None: act_vals = [0.5] * n_hidden_unit
+    if act_vals == None: act_vals = [[0.5]] * n_hidden_unit
     n_layer = len(hidden_layers)
     index_unit = n_input
 
@@ -70,7 +73,7 @@ def create_topology(n_input, hidden_layers, n_output, act_vals = None):
 
 
     for i in range(n_output):
-        top[index_unit + i] = ['output', 'identity', [index_unit - hidden_layers[-1] + l for l in range(hidden_layers[-1])], []]
+        top[index_unit + i] = ['output', 'identity', [], []]
         tot_unit += 1
 
     return top

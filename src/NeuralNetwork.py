@@ -35,7 +35,10 @@ class NeuralNetwork:
         Function to vsualize a simple topology, if there are more then one hidden layer, the visualization is bad...
         '''
         G = {}
-        layer = {'hidden':2, 'input':1, 'output':3}
+        layer = {}
+        for key in topology.keys():
+            if not topology[key][0] in layer:
+                layer[topology[key][0]] = len(layer.keys())
 
         for key in topology:
             G[key] = []
@@ -110,14 +113,14 @@ class NeuralNetwork:
             unit_activation_function = topology[node][1]
             unit_activation_function_args = [float(a) for a in topology[node][2]]
             
-            if unit_type == 'input':
+            if unit_type.startswith('input'):
                 self.input_size += 1
                 units.append(InputNeuron(unit_index))
                 
-            elif unit_type == 'hidden':
+            elif unit_type.startswith('hidden'):
                 units.append(HiddenNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
                 
-            elif unit_type == 'output': # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
+            elif unit_type.startswith('output'): # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
                 self.output_size += 1
                 units.append(OutputNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
             
@@ -350,13 +353,13 @@ class NeuralNetwork:
         
 
         # to save the starting weights and error
-        new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+        '''new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
         if last_error != 0:
             last_error_decrease_percentage = abs(last_error - new_error)/last_error    
         last_error = new_error     
         stats['training_error'].append(new_error)
         for unit in self.neurons[self.input_size:]:
-            stats['units_weights'][unit.index].append(unit.w.copy())
+            stats['units_weights'][unit.index].append(unit.w.copy())''' # TODO: togliere perchè non credo abbia senso e sballa i grafici?
 
         while epochs < max_epochs and exhausting_patience > 0:
 
@@ -394,7 +397,7 @@ class NeuralNetwork:
         stats['epochs'] = epochs
         return stats
             
-    def train(self, training_set:np.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+    #def train(self, training_set:np.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -420,6 +423,7 @@ class NeuralNetwork:
 
         # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
         # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
+        '''
         epochs = 0
         exhausting_patience = patience
         last_error_decrease_percentage = 1
@@ -477,7 +481,7 @@ class NeuralNetwork:
             
             old_sample_index = last_sample_index
 
-            print(self.predict(np.array([2,2,2])))
+            print(self.predict(np.array([2,2,2])))'''
             
         
 

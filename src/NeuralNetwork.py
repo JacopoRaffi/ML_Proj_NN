@@ -13,7 +13,8 @@ import networkx as nx
 
 # TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
 # TODO: nesterov momentum
-# TODO: fare in modo che la rete si salvi errori vari e valori utili nel traning per analisi
+
+# TODO: nel notebook test_simple l'errore di validazione è minore di quello di training, ha senso?
 
 # TODO: dalle slide
 '''Note that often the bias w0
@@ -296,7 +297,7 @@ class NeuralNetwork:
             #nn_neuron_index -= 1
     
 
-    def train(self, training_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+    def train(self, training_set:np.ndarray, validation_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -362,6 +363,7 @@ class NeuralNetwork:
             'epochs':0,
 
             'training_error':[],
+            'validation_error':[],
             'units_weights' : {}
         }
         for unit in self.neurons[self.input_size:]:
@@ -406,8 +408,11 @@ class NeuralNetwork:
 
                 # stats for every epoch
                 stats['training_error'].append(new_error)
+                stats['validation_error'].append(ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
                 for unit in self.neurons[self.input_size:]:
                     stats['units_weights'][unit.index].append(unit.w.copy())
+
+                
 
         # final stats gathering
         stats['epochs'] = epochs

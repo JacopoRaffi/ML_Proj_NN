@@ -5,11 +5,14 @@ import sys
 import os
 import pandas as pd
 import random
+import matplotlib.colors as mcolors
+import plotly.express as px
+
+
 sys.path.append(os.path.abspath('./src/'))
 from ActivationFunctions import *
 from NeuralNetwork import *
 
-from sklearn.preprocessing import MinMaxScaler
 
 RANDOM_STATE = 12345
 
@@ -26,6 +29,34 @@ def multy_plot(datas, labels, title, scale='linear'):
     plt.legend()
     plt.yscale(scale)
     plt.show()
+
+def multy_plot_3d(x, y, z, label, title):
+    print('Tot points:', len(x[0]))
+    color_list = list(mcolors.TABLEAU_COLORS)
+    fig = plt.figure(figsize=plt.figaspect(0.5))
+    fig.suptitle(title)
+
+    for i in range(len(x)):
+        ax = fig.add_subplot(1, 2, i + 1, projection='3d')
+        # For each set of style and range settings, plot n random points in the box
+        # defined by x in [23, 32], y in [0, 100], z in [zlow, zhigh].
+        ax.scatter(x[i], y[i], z[i], marker='o', color=color_list[i])
+        ax.set_xlabel(label[i][0])
+        ax.set_ylabel(label[i][1])
+        ax.set_zlabel(label[i][2])
+
+    return fig
+
+def interactive_3d_plot(dataframe, x_col, y_col, z_col, color_col, size_col=None, max_size=None, symbol_col=None):
+    print('Tot points:', len(dataframe))
+    fig = px.scatter_3d(dataframe, x=x_col, y=y_col, z=z_col,
+                color=color_col, opacity=0.7, size=size_col, size_max=max_size, symbol=symbol_col)
+
+    fig.update_layout(
+        margin=dict(l=40, r=40, t=20, b=20),
+        paper_bgcolor="LightSteelBlue",
+    )
+    return fig
 
 
 # create data structures

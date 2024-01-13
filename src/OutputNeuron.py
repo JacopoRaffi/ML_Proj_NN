@@ -116,7 +116,7 @@ class OutputNeuron(ABCNeuron):
         self.old_weight_update = np.zeros(self.n_predecessors + 1) # bias
         self.partial_weight_update = np.zeros(self.n_predecessors + 1) # bias
         if fan_in:
-            self.w = self.w * 2/(self.n_predecessors + 1)
+            self.w = self.w * 2/(self.n_predecessors + 1) # bias
         
     def forward(self):
         '''
@@ -126,7 +126,7 @@ class OutputNeuron(ABCNeuron):
 
         return: the Neuron's output
         '''
-        input = np.empty(self.n_predecessors + 1) #np.zeros(self.n_predecessors + 1)
+        input = np.empty(self.n_predecessors + 1) # bias
         input[0] = 1
         for index, p in enumerate(self.predecessors):
             input[index + 1] = p.last_predict
@@ -134,7 +134,6 @@ class OutputNeuron(ABCNeuron):
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
         
-        #print(self.index, self.last_predict)
         return self.last_predict
     
     def backward(self, target:float):

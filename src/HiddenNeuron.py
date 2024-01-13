@@ -108,6 +108,7 @@ class HiddenNeuron(ABCNeuron):
         self.w += weight_update
         self.old_weight_update = weight_update
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
+        self.partial_successors_weighted_errors = 0.0
 
         
         
@@ -139,7 +140,7 @@ class HiddenNeuron(ABCNeuron):
 
         return: -
         '''
-        input = np.empty(self.n_predecessors + 1)#np.zeros(self.n_predecessors + 1) # bias
+        input = np.empty(self.n_predecessors + 1)# bias
         input[0] = 1 # bias
         for index, p in enumerate(self.predecessors):
             input[index + 1] = p.last_predict
@@ -159,7 +160,7 @@ class HiddenNeuron(ABCNeuron):
 
         # summation
         self.partial_successors_weighted_errors += (delta * weight)
-        
+
     def backward(self):
         '''
         Calculates the Neuron's error contribute for a given learning pattern
@@ -180,8 +181,6 @@ class HiddenNeuron(ABCNeuron):
                 p.accumulate_weighted_error(self.delta_error, self.w[index + 1]) # bias
 
         
-        #print("INDEX: ", self.index, " ", "TYPE: ", self.type)
-        #print("DELTA ERROR: ", self.delta_error)
         self.partial_weight_update += (self.delta_error * predecessors_outputs)# accumulating weight updates for the batch version
 
     def add_successor(self, neuron):

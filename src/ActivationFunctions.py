@@ -12,7 +12,7 @@ class ActivationFunctions:
         :param input: the input on which the derivative is calculated
         :return: fun's derivative calculated on the input
         '''
-        #TODO estrarre la vettorizzazione per ottimizzare
+        
         x = numpy.array([input-0.0001, input, input+0.0001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
 

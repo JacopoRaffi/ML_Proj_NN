@@ -61,7 +61,6 @@ def create_stratified_topology(layers, act_args = None):
     layers.append(0)
     top = {}
 
-    print(act_args)
     for i in range(orig_layers_len):
 
         if i == 0: 

@@ -147,8 +147,8 @@ class NeuralNetwork:
             unit_type = topology[node][0]
             
             if not unit_type.startswith('output'): # Output units have no successors
-                unit_successors = [units[int(u)] for u in topology[node][3]]
-                units[int(node)].extend_successors(unit_successors)
+                unit_successors = [units[u] for u in topology[node][3]]
+                units[node].extend_successors(unit_successors)
         
         # All Neurons weights vectors are initialised
         for neuron in units:

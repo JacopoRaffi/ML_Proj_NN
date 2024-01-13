@@ -37,7 +37,7 @@ def create_dataset(n_items, n_input, input_range, output_functions, seed):
 
     for i in range(n_items):
         for l in range(n_input):
-            x[i,l] = random.randrange(input_range[0], input_range[1], input_range[2])
+            x[i,l] = random.uniform(input_range[0], input_range[1])
 
         for l, fun in enumerate(output_functions):
             
@@ -56,7 +56,7 @@ def create_stratified_topology(layers, act_args = None):
         else:
             act_args = [[]] * layers[0] + [[]] * layers[-1]
 
-            
+
     index_unit = 0
     layers.append(0)
     top = {}

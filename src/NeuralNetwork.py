@@ -235,7 +235,6 @@ class NeuralNetwork:
         attributes = vars(self)  # Get a dictionary of instance attributes
         attributes_str = "\n".join([f"{key}: {str(value)}" for key, value in attributes.items()])
         return f"Instance Attributes:\n{attributes_str}"
-    
 
     def predict(self, input:np.array):
         '''
@@ -296,7 +295,8 @@ class NeuralNetwork:
             #self.neurons[nn_neuron_index].backward()
             #nn_neuron_index -= 1
     
-    def train_2(self, training_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+
+    def train(self, training_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         

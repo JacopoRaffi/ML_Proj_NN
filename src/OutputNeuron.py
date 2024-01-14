@@ -97,7 +97,7 @@ class OutputNeuron(ABCNeuron):
         weight_update = weight_update - (lambda_tikhonov * self.w)
 
         self.w += weight_update
-        self.old_weight_update = weight_update
+        self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):

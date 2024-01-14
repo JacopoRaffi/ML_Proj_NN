@@ -391,6 +391,7 @@ class NeuralNetwork:
             
             
             #TODO: per implementare altri errori dobbiamo cambiare la back prop
+            #TODO: stiamo facendo il controllo sull'errore dell'iterazione prima, non good
             batch_index += batch_size
             if batch_index >= training_set_length:
                 if last_error_decrease_percentage <= error_decrease_tolerance:

@@ -106,7 +106,7 @@ class HiddenNeuron(ABCNeuron):
 
 
         self.w += weight_update
-        self.old_weight_update = weight_update
+        self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
 

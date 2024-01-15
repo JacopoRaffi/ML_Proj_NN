@@ -2,13 +2,16 @@ from ABCNeuron import ABCNeuron
 from InputNeuron import InputNeuron
 from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
-from ActivationFunctions import ActivationFunctions
-from ErrorFunctions import ErrorFunctions
+#from ActivationFunctions import ActivationFunctions
+import ActivationFunctions
+import ErrorFunctions
+
 import numpy as np
 import pandas as pd
 import random
 import matplotlib.pyplot as plt
 import networkx as nx
+import datetime
 
 
 # TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
@@ -85,6 +88,7 @@ class NeuralNetwork:
 
         return: the function corrisponding to the name as a callable
         '''
+        '''
         if name == 'identity':
             fun = ActivationFunctions.identity
 
@@ -99,11 +103,14 @@ class NeuralNetwork:
 
         elif name == 'gaussian':
             fun = ActivationFunctions.gaussian
-        
-        else:
-            raise ValueError(f"Activation function {name} not found")
 
-        return fun
+        elif name == 'gaussian':
+            fun = ActivationFunctions.gaussian
+        else:
+            raise ValueError(f"Activation function {name} not found")'''
+
+        return getattr(ActivationFunctions, name)
+        #return fun
 
     def __construct_from_dict(self, topology:dict, random_generator:np.random.Generator, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
         '''
@@ -129,18 +136,18 @@ class NeuralNetwork:
             # TODO non solo, devono partire da 0 ed essere gli indici dell'array... assunzioni un po traballanti...
             unit_type = topology[node][0]
             unit_activation_function = topology[node][1]
-            unit_activation_function_args = [float(a) for a in topology[node][2]]
+            unit_activation_function_args = [np.float64(a) for a in topology[node][2]]
             
             if unit_type.startswith('input'):
                 self.input_size += 1
                 units.append(InputNeuron(unit_index))
                 
             elif unit_type.startswith('hidden'):
-                units.append(HiddenNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
+                units.append(HiddenNeuron(unit_index, self.__get_function_from_string(unit_activation_function), *unit_activation_function_args))
                 
             elif unit_type.startswith('output'): # Fan-in is fixed as False for output units so to prevent Delta (Backpropagation Error Signal) to be a low value 
                 self.output_size += 1
-                units.append(OutputNeuron(unit_index, self.__get_function_from_string(unit_activation_function), unit_activation_function_args))
+                units.append(OutputNeuron(unit_index, self.__get_function_from_string(unit_activation_function), *unit_activation_function_args))
             
         # All Neurons dependecies of successors and predecessors are filled inside the objects
         for node in topology:
@@ -153,6 +160,7 @@ class NeuralNetwork:
         # All Neurons weights vectors are initialised
         for neuron in units:
             if neuron.type == 'output':
+                #neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
                 neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
             if neuron.type == 'hidden':
                 neuron.initialise_weights(rand_range_min, rand_range_max, fan_in, random_generator)
@@ -297,7 +305,21 @@ class NeuralNetwork:
             #nn_neuron_index -= 1
     
 
-    def train(self, training_set:np.ndarray, validation_set:np.ndarray, batch_size:int, max_epochs:int, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+    def train(self, 
+              training_set:np.ndarray, 
+              validation_set:np.ndarray, 
+              batch_size:int, 
+              max_epochs:int = 1024, 
+              error_decrease_tolerance:float = 0.0001, 
+              patience: int = 8, 
+              min_epochs: int = 0,
+              learning_rate:float = 0.01, 
+              lambda_tikhonov:float = 0.0, 
+              alpha_momentum:float = 0.0, 
+              metrics:list=[], 
+              collect_datas:bool=True, 
+              collect_datas_batch:bool=False, 
+              verbose:bool=True):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -329,7 +351,7 @@ class NeuralNetwork:
                 stop += len(a)
             return np.arange(start, stop)%len(a)
 
-        #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
+        #TODO Controllare i valori e capire se sono permessi (ad esempio batch_size > 0 ecc...)
 
         # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
         # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
@@ -339,62 +361,77 @@ class NeuralNetwork:
         last_error = 0
         new_error = 0
         training_set_length = len(training_set)
-
-        #minibatch_targets = np.ndarray((batch_size, self.output_size))
-        #minibatch_outputs = np.ndarray((batch_size, self.output_size))
-
         batch_index = 0
         if batch_size > training_set_length: batch_size = training_set_length
 
 
         # initializing the dict where collect stats of the training
-        stats = {
-            # input stats
-            'training_set_len':training_set_length,
-            'minibatch_size':batch_size,
-            'max_epochs':max_epochs,
-            'error_decrease_tolerance':error_decrease_tolerance,
-            'patience':patience,
-            'learning_rate':learning_rate,
-            'lambda_tikhonov':lambda_tikhonov,
-            'alpha_momentum':alpha_momentum,
+        if collect_datas:
+            stats = {
+                # -- input stats --
+                'training_set_len':training_set_length,
+                'minibatch_size':batch_size,
+                'max_epochs':max_epochs,
+                'error_decrease_tolerance':error_decrease_tolerance,
+                'patience':patience,
+                'min_epochs':min_epochs,
+                'learning_rate':learning_rate,
+                'lambda_tikhonov':lambda_tikhonov,
+                'alpha_momentum':alpha_momentum,
 
-            # training stats
-            'epochs':0,
+                # -- training stats --
+                # epoch stats
+                'epochs':0,
+                'total_train_time': datetime.datetime.now() - datetime.datetime.now(),
+                'mean_epoch_train_time':0,
+                'units_weights' : {},
+                
+                # batch stats
+                'units_weights_batch' : {}
+            }
+            for mes in metrics:
+                # epoch stats
+                stats['training_' + mes.__name__] = []
+                stats['validation_' + mes.__name__] = []
+                # batch stats
+                stats['training_batch_' + mes.__name__] = []
+                stats['validation_batch_' + mes.__name__] = []
 
-            'training_error':[],
-            'validation_error':[],
-            'units_weights' : {}
-        }
-        for unit in self.neurons[self.input_size:]:
-            stats['units_weights'][unit.index] = []
+            for unit in self.neurons[self.input_size:]:
+                # epoch stats
+                stats['units_weights'][unit.index] = []
+                # batch stats
+                stats['units_weights_batch'][unit.index] = []
         
+        # print some information
+        if verbose: print('starting values: ', stats)
+        if collect_datas: # take training time for the batch
+            start_time = datetime.datetime.now()
 
-        # to save the starting weights and error
-        '''new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
-        if last_error != 0:
-            last_error_decrease_percentage = abs(last_error - new_error)/last_error    
-        last_error = new_error     
-        stats['training_error'].append(new_error)
-        for unit in self.neurons[self.input_size:]:
-            stats['units_weights'][unit.index].append(unit.w.copy())''' # TODO: togliere perchè non credo abbia senso e sballa i grafici?
-
+        # start training cycle
         while epochs < max_epochs and exhausting_patience > 0:
-
+            
+            # batch
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
                 self.__backpropagation(sample[self.input_size:])
-               
+
             for neuron in self.neurons[self.input_size:]:
                 neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
-                
-            
-            
+
+            # stats for every batch
+            if collect_datas and collect_datas_batch and epochs > 0: # to avoid stupidly high starting values
+                for mes in metrics:
+                    stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
+                    stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
+                for unit in self.neurons[self.input_size:]:
+                    stats['units_weights_batch'][unit.index].append(unit.w.copy())
+
             #TODO: per implementare altri errori dobbiamo cambiare la back prop
             #TODO: stiamo facendo il controllo sull'errore dell'iterazione prima, non good
             batch_index += batch_size
             if batch_index >= training_set_length:
-                if last_error_decrease_percentage <= error_decrease_tolerance:
+                if epochs > min_epochs and last_error_decrease_percentage <= error_decrease_tolerance:
                     exhausting_patience -= 1
                 else:
                     exhausting_patience = patience
@@ -408,104 +445,34 @@ class NeuralNetwork:
                 last_error = new_error
 
                 # stats for every epoch
-                stats['training_error'].append(new_error)
-                stats['validation_error'].append(ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
-                for unit in self.neurons[self.input_size:]:
-                    stats['units_weights'][unit.index].append(unit.w.copy())
+                if collect_datas:
+                    # take training time for the epoch
+                    end_time = datetime.datetime.now()   
 
-                
+                    if collect_datas:
+                        stats['total_train_time'] += end_time-start_time
+
+                    if verbose: metrics_to_print = ''
+                    for mes in metrics:
+                        
+                        tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                        stats['training_' + mes.__name__].append(tr_err)
+                        val_err = mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
+                        stats['validation_' + mes.__name__].append(val_err)
+
+                        if verbose: metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
+                    for unit in self.neurons[self.input_size:]:
+                        stats['units_weights'][unit.index].append(unit.w.copy())  
+
+                    if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
+                    # take training time for the batch
+                    start_time = datetime.datetime.now()
 
         # final stats gathering
-        stats['epochs'] = epochs
-        return stats
-            
-    #def train(self, training_set:np.ndarray, minibatch_size:int, max_epochs:int, error_function:str, error_decrease_tolerance:float, patience: int, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
-        '''
-        Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
-        
-        param training_set: a set of samples (pattern-target pairs) for supervised learning
-        param minibatch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
-            -> 1: Online
-            -> 1 < minibatch_size < len(TR): Minibatch with minibatch size equals to minibatch_size
-            -> len(TR): Batch
-        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
-        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
-            -> "mee": Mean Euclidean Error
-            -> "lms": Least Mean Square
-        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
-        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
-
-        return: -
-        '''
-        #TODO Controllare i valori e capire se sono permessi (ad esempio minibatch_size > 0 ecc...)
-        #TODO: call function nesterev momentum
-
-        # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
-        # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
-        '''
-        epochs = 0
-        exhausting_patience = patience
-        last_error_decrease_percentage = 1
-        last_error = 0
-        new_error = 0
-        last_sample_index = -1
-        old_sample_index = -2
-        training_set_length = len(training_set)
-
-        minibatch = []
-        minibatch_targets = np.ndarray((minibatch_size, self.output_size))
-        minibatch_outputs = np.ndarray((minibatch_size, self.output_size))
-        i = 0
-        
-        while epochs < max_epochs and (last_error_decrease_percentage > error_decrease_tolerance or exhausting_patience > 0):
-            if last_error_decrease_percentage <= error_decrease_tolerance:
-                exhausting_patience -= 1
-            else:
-                exhausting_patience = patience
-                
-            if (last_sample_index + minibatch_size) >= training_set_length:
-                if (last_sample_index + 1) < training_set_length: 
-                    minibatch.extend(training_set[last_sample_index + 1:])
-                
-                minibatch.extend(training_set[0:minibatch_size - (training_set_length - last_sample_index) + 1])
-            else:
-                minibatch.extend(training_set[last_sample_index + 1:(last_sample_index + minibatch_size + 1)])
-
-            last_sample_index = (last_sample_index + minibatch_size) % training_set_length
-
-            i = 0    
-            for sample in minibatch:
-                minibatch_outputs[i] = self.predict(sample[0:self.input_size])
-                minibatch_targets[i] = sample[self.input_size:] #OPTIMIZE: prendere i target direttamente dal minibatch
-                self.__backpropagation(sample[self.input_size:])
-                i += 1
-               
-            for neuron in self.neurons[self.input_size:]:
-                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
-
-                
-            if error_function == "mee":
-                new_error = self.__mean_euclidean_error(minibatch_outputs, minibatch_targets)
-
-
-            if last_error != 0:
-                last_error_decrease_percentage = abs(last_error - new_error)/last_error
-
-            #print(f"Error: {new_error} - Error Decrease: {last_error_decrease_percentage}")            
-            last_error = new_error
-            minibatch = []
-
-            if (last_sample_index < old_sample_index and old_sample_index != training_set_length-1) or (last_sample_index == training_set_length-1):
-                epochs += 1
-            
-            old_sample_index = last_sample_index
-
-            print(self.predict(np.array([2,2,2])))'''
-            
-        
+        if collect_datas:
+            stats['epochs'] = epochs
+            stats['mean_epoch_train_time'] = stats['total_train_time']/stats['epochs']
+            return stats
 
 if __name__ == '__main__':
     def create_dataset(n_items, n_input, input_range, output_functions, seed):

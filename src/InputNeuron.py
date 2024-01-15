@@ -1,5 +1,6 @@
 
-from ActivationFunctions import ActivationFunctions
+#from ActivationFunctions import ActivationFunctions
+import ActivationFunctions
 import numpy as np
 from ABCNeuron import ABCNeuron
 

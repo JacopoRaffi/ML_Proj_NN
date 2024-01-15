@@ -12,6 +12,7 @@ import random
 import matplotlib.pyplot as plt
 import networkx as nx
 import datetime
+import json
 
 
 # TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
@@ -80,6 +81,13 @@ class NeuralNetwork:
         # Mostra il grafo
         plt.show()
 
+    def toJSON(self):
+        str_js = ''
+        attributes = vars(self)
+        for attr in attributes:
+            str_js += json.dumps(attributes[attr])
+        return str_js
+    
     def __get_function_from_string(self, name:str):
         '''
         Map the function name to the corresponding callable variable

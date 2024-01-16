@@ -10,8 +10,7 @@ import csv
 import json
 
 #TODO: capire come far scrivere stesso file a più processi
-#TODO: commenti
-#TODO: prendere i migliori iperparametri
+#TODO: aggiungere al file gli errori delle varie metriche e non solo MSE
 
 class ModelSelection:
     '''
@@ -25,6 +24,14 @@ class ModelSelection:
     '''
 
     def __init__(self, cv_backup:str = None, topology_backup:str = None):
+        '''
+        Constructor of the class
+        
+        param cv_backup: file to backup the model selection's state
+        
+        return: -
+        '''
+
         if cv_backup is not None and topology_backup is not None:
             if cv_backup.endswith('.csv'):
                 self.backup = open(cv_backup, 'w+') # create the backup file
@@ -53,6 +60,9 @@ class ModelSelection:
         param topology: topology of the neural network
         param topology_name: name of the topology
         param lock: lock to be used to write on the backup file
+        param backup: backup file to be used to write the results
+
+        return: -
 
         '''
 
@@ -111,6 +121,21 @@ class ModelSelection:
                         hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 
                         lock:multiprocessing.Lock = None, backup=None):
         
+        '''
+        Train the model with the given configuration of hyperparameters
+
+        param training_set: training set to be used for hold out validation
+        param validation_set: validation set to be used for hold out validation
+        param hyperparameters: list of hyperparameters' configurations to be used for validation
+        param hyperparameters_name: list of hyperparameters' names
+        param topology: topology of the neural network
+        param topology_name: name of the topology
+        param lock: lock to be used to write on the backup file
+        param: backup: backup file
+
+        return: -
+        '''
+        
         lambda_tikhonov = 0.0
         alpha_momentum = 0.0
         learning_rate = 0.1
@@ -158,7 +183,6 @@ class ModelSelection:
             stats = nn.ho_train(training_set, validation_set, batch_size, max_epochs, error_decrease_tolerance, 
                                 patience, min_epochs, learning_rate, lambda_tikhonov, alpha_momentum, metrics, verbose=False)
             
-            # TODO: aggiungere al file gli errori delle varie metriche e non solo MSE
             lock.acquire()
             writer.writerow(list(configuration) + [topology_name, stats['validation_' + metrics[0].__name__]])
             lock.release()
@@ -212,6 +236,9 @@ class ModelSelection:
 
         return: dictionary with the best hyperparameters' configuration
         '''
+
+        #TODO: prendere i migliori iperparametri
+
         pass
 
     def grid_searchHO(self, training_set:numpy.ndarray, validation_set:numpy.ndarray, hyperparameters:dict, 
@@ -221,7 +248,10 @@ class ModelSelection:
 
         param training_set: training set to be used in the grid search
         param validation_set: validation set to be used in the grid search
+        param hyperparameters: dictionary with the hyperparameters to be tested
+        param topology: topology of the neural network
         param n_proc: number of processes to be used in the grid search
+        param topology_name: name of the network topology
 
         return: the best hyperparameters' configuration
         
@@ -258,6 +288,8 @@ class ModelSelection:
 
         self.backup.close()
 
+        return self.__get_best_hyperparameters()
+
     def grid_searchKF(self, data_set:numpy.ndarray, hyperparameters:dict = {}, k_folds:int = 3, 
                       topology:dict = {}, topology_name:str = 'standard', n_proc:int = 1):
         '''
@@ -266,6 +298,8 @@ class ModelSelection:
         param data_set: training set to be used in the grid search
         param hyperparameters: dictionary with the hyperparameters to be tested
         param k_folds: number of folds to be used in the cross validation
+        param topology: topology of the neural network
+        param topology_name: name of the network topology
         param n_proc: number of processes to be used in the grid search
 
         return: the best hyperparameters' configuration
@@ -303,12 +337,15 @@ class ModelSelection:
         self.backup.close()
 
         
-        # TODO: estrai la(o le) migliori configurazioni di ipermarametri 
+        return self.__get_best_hyperparameters()
 
     def restore_backup(self, backup_file:str):
         '''
-        Restore model selection's state from a backup file (JSON format)
+        Restore model selection's state from a backup file (csv format)
 
+        param backup_file: backup file to be used to restore the state
+        
+        return: -
         '''
         pass
 

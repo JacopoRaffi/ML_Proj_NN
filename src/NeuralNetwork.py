@@ -483,7 +483,7 @@ class NeuralNetwork:
             return stats
 
     def kf_train(self, 
-              data_set:int, 
+              data_set:np.ndarray, 
               k:int,
               batch_size:int,
               max_epochs:int = 1024, 
@@ -496,7 +496,7 @@ class NeuralNetwork:
               metrics:list=[], 
               collect_data:bool=True, 
               collect_data_batch:bool=False, 
-              verbose:bool=True):
+              verbose:bool=False):
         '''
         Compute the Backpropagation training algorithm on the NN for given a data set, estimating the hyperparameter performances
         trough validation in k folds of the data
@@ -517,17 +517,17 @@ class NeuralNetwork:
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
 
-        return: -
+        return: mean and variance of the validation error
         '''
         
         # Computation of the size of each split
         data_len = len(data_set)
         split_size = math.floor(data_len/k)
         
-        val_errors = np.array(k)
+        val_errors = np.empty(k)
         stats = {}
         split_index = 0
-        training_set = np.append(data_set[:split_index], data_set[split_index + split_size:])
+        training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
         validation_set = data_set[split_index : split_index + split_size]
         
         
@@ -537,12 +537,13 @@ class NeuralNetwork:
         
             stats = self.ho_train(training_set, validation_set, batch_size, max_epochs, error_decrease_tolerance, patience, min_epochs, 
                    learning_rate, lambda_tikhonov, alpha_momentum, metrics, collect_data, collect_data_batch, verbose)
+            
             val_errors[i] = stats['validation_mean_squared_error'][-1]
             
             if i != k-1:
                 split_index += split_size
             
-                training_set = np.append(data_set[:split_index], data_set[split_index + split_size:])
+                training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
                 validation_set = data_set[split_index : split_index + split_size]
                 
         return np.mean(val_errors), np.var(val_errors)

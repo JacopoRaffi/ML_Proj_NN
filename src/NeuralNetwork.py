@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 import datetime
 import json
+import math
 
 
 # TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
@@ -312,8 +313,7 @@ class NeuralNetwork:
             #self.neurons[nn_neuron_index].backward()
             #nn_neuron_index -= 1
     
-
-    def train(self, 
+    def ho_train(self, 
               training_set:np.ndarray, 
               validation_set:np.ndarray, 
               batch_size:int, 
@@ -325,8 +325,8 @@ class NeuralNetwork:
               lambda_tikhonov:float = 0.0, 
               alpha_momentum:float = 0.0, 
               metrics:list=[], 
-              collect_datas:bool=True, 
-              collect_datas_batch:bool=False, 
+              collect_data:bool=True, 
+              collect_data_batch:bool=False, 
               verbose:bool=True):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
@@ -374,7 +374,7 @@ class NeuralNetwork:
 
 
         # initializing the dict where collect stats of the training
-        if collect_datas:
+        if collect_data:
             stats = {
                 # -- input stats --
                 'training_set_len':training_set_length,
@@ -413,7 +413,7 @@ class NeuralNetwork:
         
         # print some information
         if verbose: print('starting values: ', stats)
-        if collect_datas: # take training time for the batch
+        if collect_data: # take training time for the batch
             start_time = datetime.datetime.now()
 
         # start training cycle
@@ -428,7 +428,7 @@ class NeuralNetwork:
                 neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
 
             # stats for every batch
-            if collect_datas and collect_datas_batch and epochs > 0: # to avoid stupidly high starting values
+            if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values
                 for mes in metrics:
                     stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
                     stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
@@ -453,11 +453,11 @@ class NeuralNetwork:
                 last_error = new_error
 
                 # stats for every epoch
-                if collect_datas:
+                if collect_data:
                     # take training time for the epoch
                     end_time = datetime.datetime.now()   
 
-                    if collect_datas:
+                    if collect_data:
                         stats['total_train_time'] += end_time-start_time
 
                     if verbose: metrics_to_print = ''
@@ -477,11 +477,77 @@ class NeuralNetwork:
                     start_time = datetime.datetime.now()
 
         # final stats gathering
-        if collect_datas:
+        if collect_data:
             stats['epochs'] = epochs
             stats['mean_epoch_train_time'] = stats['total_train_time']/stats['epochs']
             return stats
 
+    def kf_train(self, 
+              data_set:int, 
+              k:int,
+              batch_size:int,
+              max_epochs:int = 1024, 
+              error_decrease_tolerance:float = 0.0001, 
+              patience: int = 8, 
+              min_epochs: int = 0,
+              learning_rate:float = 0.01, 
+              lambda_tikhonov:float = 0.0, 
+              alpha_momentum:float = 0.0, 
+              metrics:list=[], 
+              collect_data:bool=True, 
+              collect_data_batch:bool=False, 
+              verbose:bool=True):
+        '''
+        Compute the Backpropagation training algorithm on the NN for given a data set, estimating the hyperparameter performances
+        trough validation in k folds of the data
+        
+        param data_set: a set of samples (pattern-target pairs) for supervised learning
+        param k: number of data folds (data splits)
+        param batch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
+            -> 1: Online
+            -> 1 < batch_size < len(TR): Minibatch with minibatch size equals to batch_size
+            -> len(TR): Batch
+        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
+        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
+            -> "mee": Mean Euclidean Error
+            -> "lms": Least Mean Square
+        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
+        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
+        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        param alpha_momentum: Momentum Hyperparameter
+
+        return: -
+        '''
+        
+        # Computation of the size of each split
+        data_len = len(data_set)
+        split_size = math.floor(data_len/k)
+        
+        val_errors = np.array(k)
+        stats = {}
+        split_index = 0
+        training_set = np.append(data_set[:split_index], data_set[split_index + split_size:])
+        validation_set = data_set[split_index : split_index + split_size]
+        
+        
+        # At each iteration only one of the K subsets of data is used as the validation set, 
+        # while all others are used for training the model validated on it.
+        for i in range(k):
+        
+            stats = self.ho_train(training_set, validation_set, batch_size, max_epochs, error_decrease_tolerance, patience, min_epochs, 
+                   learning_rate, lambda_tikhonov, alpha_momentum, metrics, collect_data, collect_data_batch, verbose)
+            val_errors[i] = stats['validation_mean_squared_error'][-1]
+            
+            if i != k-1:
+                split_index += split_size
+            
+                training_set = np.append(data_set[:split_index], data_set[split_index + split_size:])
+                validation_set = data_set[split_index : split_index + split_size]
+                
+        return np.mean(val_errors), np.var(val_errors)
+        
+        
 if __name__ == '__main__':
     def create_dataset(n_items, n_input, input_range, output_functions, seed):
         random.seed(seed)

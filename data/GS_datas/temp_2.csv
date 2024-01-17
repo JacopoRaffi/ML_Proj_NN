@@ -1,0 +1,1 @@
+batch_size,max_epochs,error_decrease_tolerance,patience,min_epochs,learning_rate,lambda_tikhonov,alpha_momentum,metrics,collect_data,collect_data_batch,verbose,topology,validation_error_mean,validation_error_variance

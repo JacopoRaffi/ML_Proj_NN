@@ -16,10 +16,7 @@ import json
 import math
 
 
-# TODO: vedere cosa trra predecessori e successori va rimosso, sia nel dizionario di input che nei neuroni per semplificare
 # TODO: nesterov momentum
-
-# TODO: nel notebook test_simple l'errore di validazione è minore di quello di training, ha senso?
 
 # TODO: dalle slide
 '''Note that often the bias w0
@@ -37,6 +34,11 @@ fair way do not force equal lambda but it would be better to use
 Of course if you choose lambda by model selection they will automatically select
 different lambda for on-line and batch (or any mini-batch)'''
 
+# TODO: per aumentare efficenza:
+# - fare derivate a mano?
+# - approssimare valori tipo learning rate per diminuire le cifre decimale ?!?! ha senso?
+
+
 
 class NeuralNetwork:
     '''
@@ -52,6 +54,39 @@ class NeuralNetwork:
         the list of neurons, sorted in topological order, composing the NN
     
     '''
+    
+    input_stats = {
+        'training_set_len',
+        'minibatch_size',
+        'max_epochs',
+        'error_decrease_tolerance',
+        'patience',
+        'min_epochs',
+        'learning_rate',
+        'lambda_tikhonov',
+        'alpha_momentum'}
+    train_stats = {
+        'epochs',
+        'total_train_time',
+        'mean_epoch_train_time',
+        'units_weights',
+        'units_weights_batch',
+    }
+    train_input = ['training_set', 
+              'validation_set', 
+              'batch_size', 
+              'max_epochs', 
+              'error_decrease_tolerance', 
+              'patience', 
+              'min_epochs',
+              'learning_rate', 
+              'lambda_tikhonov', 
+              'alpha_momentum', 
+              'metrics', 
+              'collect_data', 
+              'collect_data_batch', 
+              'verbose']
+
 
     def display_topology(topology):
         '''
@@ -120,15 +155,15 @@ class NeuralNetwork:
 
         return getattr(ActivationFunctions, name)
 
-    def __init_weights(self, units:list):
+    def __init_weights(self):
         # All Neurons weights vectors are initialised
-        for neuron in units:
+        for neuron in self.neurons:
             if neuron.type == 'output':
                 #neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
                 neuron.initialise_weights(self.rand_range_min, self.rand_range_max, False, self.random_generator)
             if neuron.type == 'hidden':
                 neuron.initialise_weights(self.rand_range_min, self.rand_range_max, self.fan_in, self.random_generator)
-
+                
     def __construct_from_dict(self, topology:dict):
         '''
         Builds a Neural Network of ABCNeuron's objects from the topology
@@ -173,11 +208,11 @@ class NeuralNetwork:
             if not unit_type.startswith('output'): # Output units have no successors
                 unit_successors = [units[u] for u in topology[node][3]]
                 units[node].extend_successors(unit_successors)
-        
-        # All Neurons weights vectors are initialised
-        self.__init_weights(units)
 
-        return units
+        self.neurons = units
+        self.n_neurons = len(self.neurons)
+        # All Neurons weights vectors are initialised
+        self.__init_weights()
     
     def __topological_sort_util(self, index:int, visited:list, ordered:list):
         '''
@@ -246,8 +281,8 @@ class NeuralNetwork:
         self.rand_range_min = rand_range_min
         self.rand_range_max = rand_range_max
         self.fan_in = fan_in
-        self.neurons = self.__construct_from_dict(topology)
-        self.n_neurons = len(self.neurons)
+        
+        self.__construct_from_dict(topology)
         self.__topological_sort() # The NN keeps its neurons in topological order
     
     def __str__(self):
@@ -318,11 +353,11 @@ class NeuralNetwork:
             #print("Back Index:", self.neurons[nn_neuron_index].index)
             #self.neurons[nn_neuron_index].backward()
             #nn_neuron_index -= 1
-    
-    def ho_train(self, 
+                
+    def train(self, 
               training_set:np.ndarray, 
-              validation_set:np.ndarray, 
-              batch_size:int, 
+              validation_set:np.ndarray = None, 
+              batch_size:int = 1, 
               max_epochs:int = 1024, 
               error_decrease_tolerance:float = 0.0001, 
               patience: int = 8, 
@@ -380,46 +415,47 @@ class NeuralNetwork:
 
 
         # initializing the dict where collect stats of the training
-        if collect_data:
-            stats = {
-                # -- input stats --
-                'training_set_len':training_set_length,
-                'minibatch_size':batch_size,
-                'max_epochs':max_epochs,
-                'error_decrease_tolerance':error_decrease_tolerance,
-                'patience':patience,
-                'min_epochs':min_epochs,
-                'learning_rate':learning_rate,
-                'lambda_tikhonov':lambda_tikhonov,
-                'alpha_momentum':alpha_momentum,
+        stats = {
+            # -- input stats --
+            'training_set_len':training_set_length,
+            'minibatch_size':batch_size,
+            'max_epochs':max_epochs,
+            'error_decrease_tolerance':error_decrease_tolerance,
+            'patience':patience,
+            'min_epochs':min_epochs,
+            'learning_rate':learning_rate,
+            'lambda_tikhonov':lambda_tikhonov,
+            'alpha_momentum':alpha_momentum,
 
-                # -- training stats --
-                # epoch stats
-                'epochs':0,
-                'total_train_time': datetime.datetime.now() - datetime.datetime.now(),
-                'mean_epoch_train_time':0,
-                'units_weights' : {},
-                
-                # batch stats
-                'units_weights_batch' : {}
-            }
-            for mes in metrics:
-                # epoch stats
-                stats['training_' + mes.__name__] = []
-                stats['validation_' + mes.__name__] = []
-                # batch stats
-                stats['training_batch_' + mes.__name__] = []
-                stats['validation_batch_' + mes.__name__] = []
+            # -- training stats --
+            # epoch stats
+            'epochs':0,
+            'total_train_time': datetime.datetime.now() - datetime.datetime.now(),
+            'mean_epoch_train_time':0,
+            'units_weights' : {},
+            
+            
+            # batch stats
+            'units_weights_batch' : {}
+        }
+        for mes in metrics:
+            # epoch stats
+            stats['training_' + mes.__name__] = []
+            stats['validation_' + mes.__name__] = []
+            # batch stats
+            stats['training_batch_' + mes.__name__] = []
+            stats['validation_batch_' + mes.__name__] = []
 
-            for unit in self.neurons[self.input_size:]:
-                # epoch stats
-                stats['units_weights'][unit.index] = []
-                # batch stats
-                stats['units_weights_batch'][unit.index] = []
+        for unit in self.neurons[self.input_size:]:
+            # epoch stats
+            stats['units_weights'][unit.index] = []
+            # batch stats
+            stats['units_weights_batch'][unit.index] = []
         
         # print some information
-        if verbose: print('starting values: ', stats)
+        
         if collect_data: # take training time for the batch
+            if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
 
         # start training cycle
@@ -437,7 +473,8 @@ class NeuralNetwork:
             if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values
                 for mes in metrics:
                     stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
-                    stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
+                    if not validation_set is None:
+                        stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
                 for unit in self.neurons[self.input_size:]:
                     stats['units_weights_batch'][unit.index].append(unit.w.copy())
 
@@ -464,15 +501,16 @@ class NeuralNetwork:
                     end_time = datetime.datetime.now()   
 
                     if collect_data:
-                        stats['total_train_time'] += end_time-start_time
+                        stats['total_train_time'] += (end_time-start_time)
 
                     if verbose: metrics_to_print = ''
                     for mes in metrics:
                         
                         tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                         stats['training_' + mes.__name__].append(tr_err)
-                        val_err = mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
-                        stats['validation_' + mes.__name__].append(val_err)
+                        if not validation_set is None:
+                            val_err = mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
+                            stats['validation_' + mes.__name__].append(val_err)
 
                         if verbose: metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
                     for unit in self.neurons[self.input_size:]:
@@ -486,73 +524,12 @@ class NeuralNetwork:
         if collect_data:
             stats['epochs'] = epochs
             stats['mean_epoch_train_time'] = stats['total_train_time']/stats['epochs']
-            return stats
+        return stats
+        
 
-    def kf_train(self, 
-              data_set:np.ndarray, 
-              k:int,
-              batch_size:int,
-              max_epochs:int = 1024, 
-              error_decrease_tolerance:float = 0.0001, 
-              patience: int = 8, 
-              min_epochs: int = 0,
-              learning_rate:float = 0.01, 
-              lambda_tikhonov:float = 0.0, 
-              alpha_momentum:float = 0.0, 
-              metrics:list=[], 
-              collect_data:bool=True, 
-              collect_data_batch:bool=False, 
-              verbose:bool=False):
-        '''
-        Compute the Backpropagation training algorithm on the NN for given a data set, estimating the hyperparameter performances
-        trough validation in k folds of the data
-        
-        param data_set: a set of samples (pattern-target pairs) for supervised learning
-        param k: number of data folds (data splits)
-        param batch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
-            -> 1: Online
-            -> 1 < batch_size < len(TR): Minibatch with minibatch size equals to batch_size
-            -> len(TR): Batch
-        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
-        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
-            -> "mee": Mean Euclidean Error
-            -> "lms": Least Mean Square
-        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
-        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
-
-        return: mean and variance of the validation error
-        '''
-        
-        # Computation of the size of each split
-        data_len = len(data_set)
-        split_size = math.floor(data_len/k)
-        
-        val_errors = np.empty(k)
-        stats = {}
-        split_index = 0
-        training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
-        validation_set = data_set[split_index : split_index + split_size]
-        
-        
-        # At each iteration only one of the K subsets of data is used as the validation set, 
-        # while all others are used for training the model validated on it.
-        for i in range(k):
-        
-            stats = self.ho_train(training_set, validation_set, batch_size, max_epochs, error_decrease_tolerance, patience, min_epochs, 
-                   learning_rate, lambda_tikhonov, alpha_momentum, metrics, collect_data, collect_data_batch, verbose)
-            
-            val_errors[i] = stats['validation_mean_squared_error'][-1]
-            
-            if i != k-1:
-                split_index += split_size
-                self.__init_weights(self.neurons) # reset of the network to proceeds towards the next training (next fold)
-                training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
-                validation_set = data_set[split_index : split_index + split_size]
-                
-        return np.mean(val_errors), np.var(val_errors)
+    def reset_weights(self):
+        self.__init_weights()
+    
         
         
 if __name__ == '__main__':

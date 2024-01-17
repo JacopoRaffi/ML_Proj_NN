@@ -241,7 +241,7 @@ class ModelSelection:
             
 
             stats = nn.ho_train(training_set, validation_set, *args_train)      
-            writer.writerow(list(configuration) + [topology_name, stats['validation_' + metrics[0].__name__][-1]])
+            writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1]])
 
     def __get_configurations(self, hyperparameters:dict):
         '''

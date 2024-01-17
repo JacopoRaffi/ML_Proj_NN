@@ -120,7 +120,16 @@ class NeuralNetwork:
 
         return getattr(ActivationFunctions, name)
 
-    def __construct_from_dict(self, topology:dict, random_generator:np.random.Generator, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
+    def __init_weights(self, units:list):
+        # All Neurons weights vectors are initialised
+        for neuron in units:
+            if neuron.type == 'output':
+                #neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
+                neuron.initialise_weights(self.rand_range_min, self.rand_range_max, False, self.random_generator)
+            if neuron.type == 'hidden':
+                neuron.initialise_weights(self.rand_range_min, self.rand_range_max, self.fan_in, self.random_generator)
+
+    def __construct_from_dict(self, topology:dict):
         '''
         Builds a Neural Network of ABCNeuron's objects from the topology
         
@@ -166,12 +175,7 @@ class NeuralNetwork:
                 units[node].extend_successors(unit_successors)
         
         # All Neurons weights vectors are initialised
-        for neuron in units:
-            if neuron.type == 'output':
-                #neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
-                neuron.initialise_weights(rand_range_min, rand_range_max, False, random_generator)
-            if neuron.type == 'hidden':
-                neuron.initialise_weights(rand_range_min, rand_range_max, fan_in, random_generator)
+        self.__init_weights(units)
 
         return units
     
@@ -238,8 +242,11 @@ class NeuralNetwork:
         self.input_size = 0
         self.output_size = 0
 
-        random_genrator = np.random.default_rng(random_state)
-        self.neurons = self.__construct_from_dict(topology, random_genrator, rand_range_min, rand_range_max, fan_in)
+        self.random_generator = np.random.default_rng(random_state)
+        self.rand_range_min = rand_range_min
+        self.rand_range_max = rand_range_max
+        self.fan_in = self.fan_in
+        self.neurons = self.__construct_from_dict(topology)
         self.n_neurons = len(self.neurons)
         self.__topological_sort() # The NN keeps its neurons in topological order
     
@@ -541,7 +548,7 @@ class NeuralNetwork:
             
             if i != k-1:
                 split_index += split_size
-            
+                self.__init_weights(self.neurons) # reset of the network to proceeds towards the next training (next fold)
                 training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
                 validation_set = data_set[split_index : split_index + split_size]
                 

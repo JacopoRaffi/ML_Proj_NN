@@ -156,6 +156,7 @@ class ModelSelection:
             nn = NeuralNetwork(topology, *args_init)
             # train the model
             args_train = [values_to_use[key] for key in train_arg_names]
+            print("\nTraining a new model : ", args_train)
             mean, var = nn.kf_train(data_set, k_folds, *args_train)
             
             writer.writerow(list(configuration) + [topology_name, mean, var])
@@ -321,7 +322,7 @@ class ModelSelection:
 
         pass
 
-    def __merge_csv_file(self, results_file_name:str, n_proc:int = 1):
+    def merge_csv_file(self, results_file_name:str, n_proc:int = 1):
         '''
         Merge the results of the processes in a single file
 

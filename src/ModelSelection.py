@@ -11,8 +11,11 @@ import ErrorFunctions
 import csv
 import os
 
+#TODO implementare il ripristino (il main ricomputerà le configurazioni eliminando quelle già eseguite e salvate nei backup.)
+#                                   le restanti saranno ridistribuite trai processi)
 #TODO fare in modo che i backup_file si salvino periodicamente su disco e non solo alla fine del processo
 #TODO controllare che la merge funzioni correttamente
+#TODO ripristinare lo stato dei backup
 #TODO (opzionale) ottimizzare
 
 

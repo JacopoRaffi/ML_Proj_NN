@@ -11,10 +11,10 @@ import ErrorFunctions
 import csv
 import os
 
-#TODO: aggiungere al file gli errori delle varie metriche e non solo MSE
-#TODO: ottimizzare le configurazioni, ogni processo si calcola le sue 
-#TODO: evitare le copie inutili dei dati (come dataset, topology, nomi ipermarametri, ecc...)
-#TODO: unire i file dei processi e restituire la migliore configurazione
+#TODO fare in modo che i backup_file si salvino periodicamente su disco e non solo alla fine del processo
+#TODO controllare che la merge funzioni correttamente
+#TODO (opzionale) ottimizzare
+
 
 class ModelSelection:
     '''

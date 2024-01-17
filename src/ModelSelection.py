@@ -1,16 +1,20 @@
 from ast import Raise
+from email import header
+from operator import index
+from matplotlib.pylab import f
 import numpy 
-import math
 import multiprocessing
 import pandas
 import itertools
 from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
 import csv
-import json
+import os
 
-#TODO: capire come far scrivere stesso file a più processi
 #TODO: aggiungere al file gli errori delle varie metriche e non solo MSE
+#TODO: ottimizzare le configurazioni, ogni processo si calcola le sue 
+#TODO: evitare le copie inutili dei dati (come dataset, topology, nomi ipermarametri, ecc...)
+#TODO: unire i file dei processi e restituire la migliore configurazione
 
 class ModelSelection:
     '''
@@ -34,7 +38,7 @@ class ModelSelection:
 
         if cv_backup is not None and topology_backup is not None:
             if cv_backup.endswith('.csv'):
-                self.backup = open(cv_backup, 'w+') # create the backup file
+                self.backup = cv_backup
             else:
                 Raise(ValueError(' cv_backup extension must be .csv'))
 
@@ -48,8 +52,7 @@ class ModelSelection:
 
 
     def __train_modelKF(self, data_set:numpy.ndarray, hyperparameters:list, hyperparameters_name:list, 
-                        k_folds:int = 1, topology:dict = {}, topology_name:str = 'standard', 
-                        lock:multiprocessing.Lock = None, backup=None):
+                        k_folds:int = 1, topology:dict = {}, topology_name:str = 'standard', backup:str = None):
         '''
         Train the model with the given hyperparameters and the number of folds
 
@@ -59,7 +62,6 @@ class ModelSelection:
         param k_folds: number of folds to be used in the cross validation
         param topology: topology of the neural network
         param topology_name: name of the topology
-        param lock: lock to be used to write on the backup file
         param backup: backup file to be used to write the results
 
         return: -
@@ -79,7 +81,14 @@ class ModelSelection:
         fan_in = True
         random_state = 42
         metrics = [ErrorFunctions.mean_squared_error, ]
-        writer = csv.writer(backup)
+
+        if os.path.isfile(backup): # if file exists i only add more data
+            back_up = open(backup, 'a')
+            writer = csv.writer(back_up)
+        else:
+            back_up = open(backup, 'w+') # if file doesn't exist i create it adding the header
+            writer = csv.writer(back_up)
+            writer.writerow(hyperparameters_name + ['topology', 'mean', 'var'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -113,13 +122,13 @@ class ModelSelection:
             mean, var = nn.kf_train(data_set, k_folds, batch_size, max_epochs, error_decrease_tolerance, 
                                     patience, min_epochs, learning_rate, lambda_tikhonov, alpha_momentum, metrics)
             
-            lock.acquire()
             writer.writerow(list(configuration) + [topology_name, mean, var])
-            lock.release()
+        
+        back_up.close()
 
     def __train_modelHO(self, training_set:numpy.ndarray, validation_set:numpy.ndarray, hyperparameters:list, 
                         hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 
-                        lock:multiprocessing.Lock = None, backup=None):
+                        backup:str = None):
         
         '''
         Train the model with the given configuration of hyperparameters
@@ -135,7 +144,7 @@ class ModelSelection:
 
         return: -
         '''
-        
+
         lambda_tikhonov = 0.0
         alpha_momentum = 0.0
         learning_rate = 0.1
@@ -149,7 +158,14 @@ class ModelSelection:
         fan_in = True
         random_state = 42
         metrics = [ErrorFunctions.mean_squared_error, ]
-        writer = csv.writer(backup)
+
+        if os.path.isfile(backup):
+            back_up = open(backup, 'a')
+            writer = csv.writer(back_up)
+        else:
+            back_up = open(backup, 'w+')
+            writer = csv.writer(back_up)
+            writer.writerow(hyperparameters_name + ['topology', 'mean'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -183,9 +199,7 @@ class ModelSelection:
             stats = nn.ho_train(training_set, validation_set, batch_size, max_epochs, error_decrease_tolerance, 
                                 patience, min_epochs, learning_rate, lambda_tikhonov, alpha_momentum, metrics, verbose=False)
             
-            lock.acquire()
-            writer.writerow(list(configuration) + [topology_name, stats['validation_' + metrics[0].__name__]])
-            lock.release()
+            writer.writerow(list(configuration) + [topology_name, stats['validation_' + metrics[0].__name__][-1]])
 
     def __get_configurations(self, hyperparameters:dict):
         '''
@@ -241,6 +255,23 @@ class ModelSelection:
 
         pass
 
+    def __merge_csv_file(self, results_file_name:str, n_proc:int = 1):
+        '''
+        Merge the results of the processes in a single file
+
+        param results_file_name: name of the file obtained after the merge
+        param n_proc: number of processes
+
+        return: -
+        '''
+
+        backup_file = [f'backup_{i}.csv' for i in range(n_proc)]
+        df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
+        df.to_csv(results_file_name, index=False)
+
+        for file in backup_file:
+            os.remove(file)
+
     def grid_searchHO(self, training_set:numpy.ndarray, validation_set:numpy.ndarray, hyperparameters:dict, 
                       topology:dict, n_proc:int = 1, topology_name:str = 'standard'):
         '''
@@ -256,19 +287,14 @@ class ModelSelection:
         return: the best hyperparameters' configuration
         
         '''
-
+        #TODO: ottimizzare caso con singolo processo, chiama direttamente la funzione _train_modelHO
         configurations, names = self.__get_configurations(hyperparameters)
 
         remainder = len(configurations) % n_proc
         single_conf_size = int(len(configurations) / n_proc)
         start = end = 0
         proc_pool = []
-
-        file_lock = multiprocessing.Lock()
         
-        writer = csv.writer(self.backup)
-        writer.writerow(names + ['topology', 'mean'])
-
         for i in range(n_proc): # distribute equally the workload among the processes
             start = end
             if remainder > 0:
@@ -277,7 +303,8 @@ class ModelSelection:
                 end += single_conf_size
             
             process = multiprocessing.Process(target=self.__train_modelHO, args=(training_set, validation_set, configurations[start:end],
-                                                                                 names, topology, topology_name, file_lock, self.backup))
+                                                                                 names, topology, topology_name,
+                                                                                 f'backup_{i}.csv',))
             proc_pool.append(process)
             process.start()
             
@@ -286,9 +313,7 @@ class ModelSelection:
         for process in proc_pool: # join all the terminated processes
             process.join()
 
-        self.backup.close()
-
-        return self.__get_best_hyperparameters()
+        self.__merge_csv_file(self.backup, n_proc)
 
     def grid_searchKF(self, data_set:numpy.ndarray, hyperparameters:dict = {}, k_folds:int = 3, 
                       topology:dict = {}, topology_name:str = 'standard', n_proc:int = 1):
@@ -304,7 +329,7 @@ class ModelSelection:
 
         return: the best hyperparameters' configuration
         '''
-
+        #TODO: ottimizzare caso con singolo processo, chiama direttamente la funzione _train_modelKF
         configurations, names = self.__get_configurations(hyperparameters)
 
         remainder = len(configurations) % n_proc
@@ -314,8 +339,8 @@ class ModelSelection:
 
         file_lock = multiprocessing.Lock()
         
-        writer = csv.writer(self.backup)
-        writer.writerow(names + ['topology', 'mean', 'var'])
+        #writer = csv.writer(self.backup)
+        #writer.writerow(names + ['topology', 'mean', 'var'])
 
         for i in range(n_proc): # distribute equally the workload among the processes
             start = end
@@ -325,7 +350,8 @@ class ModelSelection:
                 end += single_conf_size
             
             process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end], 
-                                                                                 names, k_folds, topology, topology_name, file_lock, self.backup,))
+                                                                                 names, k_folds, topology, topology_name, 
+                                                                                 f'backup_{i}.csv',))
             proc_pool.append(process)
             process.start()
             
@@ -334,10 +360,10 @@ class ModelSelection:
         for process in proc_pool: # join all the terminated processes
             process.join()
 
-        self.backup.close()
+        #final_results = open(self.backup, 'a+')
+        #writer = csv.writer(final_results)
 
-        
-        return self.__get_best_hyperparameters()
+        self.__merge_csv_file(self.backup, n_proc)
 
     def restore_backup(self, backup_file:str):
         '''

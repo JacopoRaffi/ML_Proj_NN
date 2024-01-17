@@ -163,6 +163,7 @@ class ModelSelection:
             mean, var = nn.kf_train(data_set, k_folds, *args_train)
             
             writer.writerow(list(configuration) + [topology_name, mean, var])
+            back_up.flush()
         
         back_up.close()
 
@@ -270,6 +271,7 @@ class ModelSelection:
 
             stats = nn.ho_train(training_set, validation_set, *args_train)      
             writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1], 0])
+            back_up.flush()
 
     def __get_configurations(self, hyperparameters:dict):
         '''

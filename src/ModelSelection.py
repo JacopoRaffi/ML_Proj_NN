@@ -27,31 +27,6 @@ class ModelSelection:
 
     '''
 
-    default_values:{
-        'range_min' : -0.75,
-        'range_max' : 0.75,
-        'fan_in' : True,
-        'random_state' : None,
-
-        'lambda_tikhonov' : 0.0,
-        'alpha_momentum' : 0.5,
-        'learning_rate' : 0.1,
-        'batch_size' : 1,
-        'max_epochs' : 100,
-        'error_decrease_tolerance' : 0.0001,
-        'patience' : 10,
-        'min_epochs' : 0,
-        'metrics':[ErrorFunctions.mean_squared_error, ],
-
-        'collect_data':True, 
-        'collect_data_batch':False, 
-        'verbose':False
-    }
-    inzialization_arg_names = ['range_min', 'range_max', 'fan_in', 'random_state']
-    train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
-                        'collect_data_batch', 'verbose']
-
 
     def __init__(self, cv_backup:str = None, topology_backup:str = None):
         '''
@@ -110,7 +85,32 @@ class ModelSelection:
         fan_in = True
         random_state = 42
         metrics = [ErrorFunctions.mean_squared_error, ]'''
-        values_to_use = self.default_values.copy()
+        
+        values_to_use =  {
+        'range_min' : -0.75,
+        'range_max' : 0.75,
+        'fan_in' : True,
+        'random_state' : None,
+
+        'lambda_tikhonov' : 0.0,
+        'alpha_momentum' : 0.5,
+        'learning_rate' : 0.1,
+        'batch_size' : 1,
+        'max_epochs' : 100,
+        'error_decrease_tolerance' : 0.0001,
+        'patience' : 10,
+        'min_epochs' : 0,
+        'metrics':[ErrorFunctions.mean_squared_error, ],
+
+        'collect_data':True, 
+        'collect_data_batch':False, 
+        'verbose':False
+        }
+        inzialization_arg_names = ['range_min', 'range_max', 'fan_in', 'random_state']
+        train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
+                       'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
+                        'collect_data_batch', 'verbose']
+        
 
         if os.path.isfile(backup): # if file exists i only add more data
             back_up = open(backup, 'a')
@@ -118,7 +118,7 @@ class ModelSelection:
         else:
             back_up = open(backup, 'w+') # if file doesn't exist i create it adding the header
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['topology', 'mean', 'var'])
+            writer.writerow(hyperparameters_name + ['topology','validation_error_mean', 'validation_error_variance'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -149,13 +149,13 @@ class ModelSelection:
                     min_epochs = hyper_param'''
             
             
-            for i, key in enumerate(hyperparameters_name): values_to_use[key] = hyperparameters[i]
+            for i, key in enumerate(hyperparameters_name): values_to_use[key] = configuration[i]
 
             # create a new model
-            args_init = [values_to_use[key] for key in self.inzialization_arg_names]
+            args_init = [values_to_use[key] for key in inzialization_arg_names]
             nn = NeuralNetwork(topology, *args_init)
             # train the model
-            args_train = [values_to_use[key] for key in self.train_arg_names]
+            args_train = [values_to_use[key] for key in train_arg_names]
             mean, var = nn.kf_train(data_set, k_folds, *args_train)
             
             writer.writerow(list(configuration) + [topology_name, mean, var])
@@ -194,7 +194,31 @@ class ModelSelection:
         fan_in = True
         random_state = 42
         metrics = [ErrorFunctions.mean_squared_error, ]'''
-        values_to_use = self.default_values.copy()
+        
+        values_to_use = {
+        'range_min' : -0.75,
+        'range_max' : 0.75,
+        'fan_in' : True,
+        'random_state' : None,
+
+        'lambda_tikhonov' : 0.0,
+        'alpha_momentum' : 0.5,
+        'learning_rate' : 0.1,
+        'batch_size' : 1,
+        'max_epochs' : 100,
+        'error_decrease_tolerance' : 0.0001,
+        'patience' : 10,
+        'min_epochs' : 0,
+        'metrics':[ErrorFunctions.mean_squared_error, ],
+
+        'collect_data':True, 
+        'collect_data_batch':False, 
+        'verbose':False
+        }
+        inzialization_arg_names = ['range_min', 'range_max', 'fan_in', 'random_state']
+        train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
+                       'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
+                        'collect_data_batch', 'verbose']
 
         if os.path.isfile(backup):
             back_up = open(backup, 'a')
@@ -202,7 +226,7 @@ class ModelSelection:
         else:
             back_up = open(backup, 'w+')
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['topology', 'mean'])
+            writer.writerow(hyperparameters_name + ['topology', 'validation_error_mean', 'validation_error_variance'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -231,17 +255,17 @@ class ModelSelection:
                 elif hyperparameters_name[index] == 'min_epochs':
                     min_epochs = hyper_param'''
             
-            for i, key in enumerate(hyperparameters_name): values_to_use[key] = hyperparameters[i]
+            for i, key in enumerate(hyperparameters_name): values_to_use[key] = configuration[i]
 
             # create a new model
-            args_init = [values_to_use[key] for key in self.inzialization_arg_names]
+            args_init = [values_to_use[key] for key in inzialization_arg_names]
             nn = NeuralNetwork(topology, *args_init)
             # train the model
-            args_train = [values_to_use[key] for key in self.train_arg_names]
+            args_train = [values_to_use[key] for key in train_arg_names]
             
 
             stats = nn.ho_train(training_set, validation_set, *args_train)      
-            writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1]])
+            writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1], 0])
 
     def __get_configurations(self, hyperparameters:dict):
         '''

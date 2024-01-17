@@ -245,7 +245,7 @@ class NeuralNetwork:
         self.random_generator = np.random.default_rng(random_state)
         self.rand_range_min = rand_range_min
         self.rand_range_max = rand_range_max
-        self.fan_in = self.fan_in
+        self.fan_in = fan_in
         self.neurons = self.__construct_from_dict(topology)
         self.n_neurons = len(self.neurons)
         self.__topological_sort() # The NN keeps its neurons in topological order

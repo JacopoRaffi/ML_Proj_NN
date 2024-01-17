@@ -119,7 +119,6 @@ class NeuralNetwork:
             raise ValueError(f"Activation function {name} not found")'''
 
         return getattr(ActivationFunctions, name)
-        #return fun
 
     def __construct_from_dict(self, topology:dict, random_generator:np.random.Generator, rand_range_min:float = -1, rand_range_max:float = 1, fan_in:bool = True):
         '''

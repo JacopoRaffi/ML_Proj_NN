@@ -20,9 +20,6 @@ import ErrorFunctions
 
 #TODO implementare il ripristino (il main ricomputerà le configurazioni eliminando quelle già eseguite e salvate nei backup.)
 #                                   le restanti saranno ridistribuite trai processi)
-#TODO fare in modo che i backup_file si salvino periodicamente su disco e non solo alla fine del processo
-#TODO controllare che la merge funzioni correttamente
-#TODO ripristinare lo stato dei backup
 #TODO (opzionale) ottimizzare
 
 
@@ -107,9 +104,8 @@ class ModelSelection:
             for j, met in enumerate(metrics):
                 val_errors[i, j] = met(model.predict_array(validation_set[:,:model.input_size]), validation_set[:,model.input_size:])
         
-        
-        stats['mean_metrics'] = np.mean(val_errors, axis=1)
-        stats['variance_metrics'] = np.var(val_errors, axis=1)
+        stats['mean_metrics'] = np.mean(val_errors, axis=0)
+        stats['variance_metrics'] = np.var(val_errors, axis=0)
         return stats
 
     def __init__(self, cv_backup:str):
@@ -174,17 +170,13 @@ class ModelSelection:
         return: -
 
         '''   
-        if not os.path.isfile(backup): # if file exists i only add more data
+        if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['validation_error_mean', 'validation_error_variance']) # TODO: il writer è necessario, è troppo pesante?
-            back_up.close()
-
-            #writer = csv.writer(back_up)
-        #else:
-            #back_up = open(backup, 'w+') # if file doesn't exist i create it adding the header
-            #writer = csv.writer(back_up)
-            #writer.writerow(hyperparameters_name + ['validation_error_mean', 'validation_error_variance'])
+            writer.writerow(hyperparameters_name + ['stats']) # TODO: il writer è necessario, è troppo pesante?
+        else: # if file exists i only add more data
+            back_up = open(backup, 'a') 
+            writer = csv.writer(back_up)
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -205,11 +197,106 @@ class ModelSelection:
             
             # TODO: se ci piace ottimizzare anche le nostre madri
             # potremmo accumulare un po di dati alla volta e poi scrverli tutti assieme ma non so se ha senso
-            back_up = open(backup, 'a') 
-            writer = csv.writer(back_up)
+            #back_up = open(backup, 'a') 
+            #writer = csv.writer(back_up)
             writer.writerow(list(configuration) + [stats]) 
-            back_up.close()
+            back_up.flush()
 
+        back_up.close()
+
+    def __get_configurations(self, hyperparameters:dict):
+        '''
+        Get all the possible configurations of the hyperparameters
+
+        param hyperparameters: dictionary with the hyperparameters to be tested
+
+        return: list of all the possible configurations and list of the hyperparameters' names
+        '''
+
+        configurations = []
+        names = list(hyperparameters.keys())
+
+        for hyper_param in hyperparameters:
+            if hyper_param in self.default_values.keys():
+                configurations.append(hyperparameters[hyper_param])
+
+        configurations = list(itertools.product(*configurations))
+
+        return configurations, names
+
+    def __merge_csv_file(self, results_file_name:str, n_proc:int = 1):
+        '''
+        Merge the results of the processes in a single file
+
+        param results_file_name: name of the file obtained after the merge
+        param n_proc: number of processes
+
+        return: -
+        '''
+
+        backup_file = [f'temp_{i}.csv' for i in range(n_proc)]
+        df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
+        df.to_csv(results_file_name, index=False)
+
+        for file in backup_file:
+            os.remove(file)
+
+    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1):
+        '''
+        Implementation of the grid search algorithm
+
+        param data_set: training set to be used in the grid search
+        param hyperparameters: dictionary with the hyperparameters to be tested
+        param k_folds: number of folds to be used in the cross validation
+        param topology: topology of the neural network
+        param topology_name: name of the network topology
+        param n_proc: number of processes to be used in the grid search
+
+        return: the best hyperparameters' configuration
+        '''
+        
+        configurations, names = self.__get_configurations(hyperparameters)
+
+        if n_proc == 1: # sequential execution
+            self.__train_modelKF(data_set, configurations, names, k_folds, self.backup)
+            return
+
+        remainder = len(configurations) % n_proc
+        single_conf_size = int(len(configurations) / n_proc)
+        start = end = 0
+        proc_pool = []
+        parent_dir = Path(self.backup).parent.absolute()
+
+        for i in range(n_proc): # distribute equally the workload among the processes
+            start = end
+            if remainder > 0:
+                end += single_conf_size + 1
+            else:
+                end += single_conf_size
+            
+            process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
+                                                                                 names, k_folds, os.path.join(parent_dir, f'temp_{i}.csv')))
+            proc_pool.append(process)
+            process.start()
+            
+            remainder -= 1
+           
+        for process in proc_pool: # join all the terminated processes
+            process.join()
+
+        self.__merge_csv_file(self.backup, n_proc)
+
+    def restore_backup(self, backup_file:list):
+        '''
+        Restore model selection's state from a backup file (csv format)
+
+        param backup_file: backup file list to be used to restore the state
+        
+        return: -
+        '''
+
+        pass
+    
     def __train_modelHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
                         hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 
                         backup:str = None):
@@ -302,43 +389,6 @@ class ModelSelection:
             writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1], 0])
             back_up.flush()
 
-    def __get_configurations(self, hyperparameters:dict):
-        '''
-        Get all the possible configurations of the hyperparameters
-
-        param hyperparameters: dictionary with the hyperparameters to be tested
-
-        return: list of all the possible configurations and list of the hyperparameters' names
-        '''
-
-        configurations = []
-        names = list(hyperparameters.keys())
-
-        for hyper_param in hyperparameters:
-            if hyper_param in self.default_values.keys():
-                configurations.append(hyperparameters[hyper_param])
-
-        configurations = list(itertools.product(*configurations))
-
-        return configurations, names
-
-    def __merge_csv_file(self, results_file_name:str, n_proc:int = 1):
-        '''
-        Merge the results of the processes in a single file
-
-        param results_file_name: name of the file obtained after the merge
-        param n_proc: number of processes
-
-        return: -
-        '''
-
-        backup_file = [f'backup_{i}.csv' for i in range(n_proc)]
-        df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
-        df.to_csv(results_file_name, index=False)
-
-        for file in backup_file:
-            os.remove(file)
-
     def grid_searchHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:dict, 
                       topology:dict, n_proc:int = 1, topology_name:str = 'standard'):
         '''
@@ -381,76 +431,3 @@ class ModelSelection:
             process.join()
 
         self.__merge_csv_file(self.backup, n_proc)
-
-    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1):
-        '''
-        Implementation of the grid search algorithm
-
-        param data_set: training set to be used in the grid search
-        param hyperparameters: dictionary with the hyperparameters to be tested
-        param k_folds: number of folds to be used in the cross validation
-        param topology: topology of the neural network
-        param topology_name: name of the network topology
-        param n_proc: number of processes to be used in the grid search
-
-        return: the best hyperparameters' configuration
-        '''
-        #TODO: ottimizzare caso con singolo processo, chiama direttamente la funzione _train_modelKF
-        configurations, names = self.__get_configurations(hyperparameters)
-
-        remainder = len(configurations) % n_proc
-        single_conf_size = int(len(configurations) / n_proc)
-        start = end = 0
-        proc_pool = []
-        parent_dir = Path(self.backup).parent.absolute()
-
-        #file_lock = multiprocessing.Lock()
-        
-        #writer = csv.writer(self.backup)
-        #writer.writerow(names + ['topology', 'mean', 'var'])
-
-        for i in range(n_proc): # distribute equally the workload among the processes
-            start = end
-            if remainder > 0:
-                end += single_conf_size + 1
-            else:
-                end += single_conf_size
-            
-            process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
-                                                                                 names, k_folds, os.path.join(parent_dir, f'temp_{i}.csv')))
-            proc_pool.append(process)
-            process.start()
-            
-            remainder -= 1
-           
-        for process in proc_pool: # join all the terminated processes
-            process.join()
-
-        #final_results = open(self.backup, 'a+')
-        #writer = csv.writer(final_results)
-
-        #self.__merge_csv_file(self.backup, n_proc)
-
-    def restore_backup(self, backup_file:str):
-        '''
-        Restore model selection's state from a backup file (csv format)
-
-        param backup_file: backup file to be used to restore the state
-        
-        return: -
-        '''
-        pass
-        
-    # puzza
-    def __get_best_hyperparameters(self, num:int = 1):
-        '''
-        Get the best hyperparameters' configuration(s)
-
-        param num: number of best configurations to be returned
-
-        return: dictionary with the best hyperparameters' configuration
-        '''
-
-        #TODO: prendere i migliori iperparametri
-
-        pass

@@ -126,7 +126,7 @@ class ModelSelection:
             Raise(ValueError('Backup file missing'))
             
         self.partials_backup_prefix = 'tmp_'
-        self.partials_backup_path = '../data/gs_data/partial'
+        self.partials_backup_path = '..\\data\\gs_data\\partial'
         self.backup = cv_backup
         self.default_values =  {
         'range_min' : -0.75,
@@ -155,55 +155,7 @@ class ModelSelection:
                        'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
                         'collect_data_batch', 'verbose']
 
-    def __train_modelKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
-                        k_folds:int = 1, backup:str = None, verbose:bool = True):
-        '''
-        Train the model with the given hyperparameters and the number of folds
-
-        param dataset: dataset to be used for K-Fold cross validation
-        param hyperparameters: dict of hyperparameters' configurations to be used for validation
-        param hyperparameters_name: list of hyperparameters' names
-        param k_folds: number of folds to be used in the cross validation
-        param topology: topology of the neural network
-        param backup: backup file to be used to write the results
-
-        return: -
-
-        '''   
-        if not os.path.isfile(backup): 
-            back_up = open(backup, 'a+') 
-            writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats']) # TODO: il writer è necessario, è troppo pesante?
-        else: # if file exists i only add more data
-            back_up = open(backup, 'a') 
-            writer = csv.writer(back_up)
-
-        # for every configuration create a new clean model and train it
-        for configuration in hyperparameters:
-            grid_val = self.default_values.copy()
-            for i, hyper_param in enumerate(configuration): 
-                grid_val[hyperparameters_name[i]] = hyper_param
-
-            # create a new model
-            args_init = [grid_val[key] for key in self.inzialization_arg_names]
-            nn = NeuralNetwork(*args_init)
-            # train the model
-            args_train = [grid_val[key] for key in self.train_arg_names] 
-            if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
-            
-            
-            
-            stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
-            
-            # TODO: se ci piace ottimizzare anche le nostre madri
-            # potremmo accumulare un po di dati alla volta e poi scrverli tutti assieme ma non so se ha senso
-            #back_up = open(backup, 'a') 
-            #writer = csv.writer(back_up)
-            writer.writerow(list(configuration) + [stats]) 
-            back_up.flush()
-
-        back_up.close()
-
+    
     def __restore_backup(self, hyperparameters:list = None):
         '''
         Restore model selection's state from a backup file (csv format)
@@ -236,7 +188,7 @@ class ModelSelection:
         done_configurations = []
         if recovery:
             done_configurations, success = self.__restore_backup(hyperparameters.keys())
-            
+
             if not success:
                 Raise(ValueError('The specified hyperparameters not correspond to backup data found'))
         
@@ -274,6 +226,57 @@ class ModelSelection:
 
         return results_file_name
 
+    def __train_modelKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
+                        k_folds:int = 1, backup:str = None, verbose:bool = True):
+        '''
+        Train the model with the given hyperparameters and the number of folds
+
+        param dataset: dataset to be used for K-Fold cross validation
+        param hyperparameters: dict of hyperparameters' configurations to be used for validation
+        param hyperparameters_name: list of hyperparameters' names
+        param k_folds: number of folds to be used in the cross validation
+        param topology: topology of the neural network
+        param backup: backup file to be used to write the results
+
+        return: -
+
+        '''   
+        
+        print('peniluz')
+        if not os.path.isfile(backup): 
+            back_up = open(backup, 'a+') 
+            writer = csv.writer(back_up)
+            writer.writerow(hyperparameters_name + ['stats']) # TODO: il writer è necessario, è troppo pesante?
+        else: # if file exists i only add more data
+            back_up = open(backup, 'a') 
+            writer = csv.writer(back_up)
+
+        # for every configuration create a new clean model and train it
+        for configuration in hyperparameters:
+            grid_val = self.default_values.copy()
+            for i, hyper_param in enumerate(configuration): 
+                grid_val[hyperparameters_name[i]] = hyper_param
+
+            # create a new model
+            args_init = [grid_val[key] for key in self.inzialization_arg_names]
+            nn = NeuralNetwork(*args_init)
+            # train the model
+            args_train = [grid_val[key] for key in self.train_arg_names] 
+            if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
+            
+            
+            
+            stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
+            
+            # TODO: se ci piace ottimizzare anche le nostre madri
+            # potremmo accumulare un po di dati alla volta e poi scrverli tutti assieme ma non so se ha senso
+            # back_up = open(backup, 'a') 
+            # writer = csv.writer(back_up)
+            writer.writerow(list(configuration) + [stats]) 
+            back_up.flush()
+
+        back_up.close()
+
     def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
         '''
         Implementation of the grid search algorithm
@@ -287,6 +290,8 @@ class ModelSelection:
 
         return: the best hyperparameters' configuration
         '''
+        
+        
         
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, recovery)
@@ -313,7 +318,6 @@ class ModelSelection:
                 end += single_conf_size
             
             j = i+1
-            print(os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv'))
             process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
                                                                                  names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')))
             proc_pool.append(process)

@@ -125,8 +125,8 @@ class ModelSelection:
         else:
             Raise(ValueError('Backup file missing'))
             
-            
-            
+        self.partials_backup_prefix = 'tmp_'
+        self.partials_backup_path = '../data/gs_data/partial'
         self.backup = cv_backup
         self.default_values =  {
         'range_min' : -0.75,
@@ -204,7 +204,28 @@ class ModelSelection:
 
         back_up.close()
 
-    def __get_configurations(self, hyperparameters:dict):
+    def __restore_backup(self, hyperparameters:list = None):
+        '''
+        Restore model selection's state from a backup file (csv format)
+
+        param backup_file: backup file list to be used to restore the state
+        
+        return: -
+        '''
+        
+        restore_file = self.__merge_csv_file(self.partials_backup_prefix + "0.csv")
+        
+        csv = pandas.read_csv(restore_file)
+        backup_hyperparameters = csv.columns.values.tolist()[:-1]
+        
+        if hyperparameters is not None:
+            if backup_hyperparameters == hyperparameters: return None, False
+        
+        done_configurations = csv[csv.columns.difference(['stats'])].tolist()
+        
+        return done_configurations, True
+
+    def __get_configurations(self, hyperparameters:dict, recovery:bool = False):
         '''
         Get all the possible configurations of the hyperparameters
 
@@ -212,7 +233,14 @@ class ModelSelection:
 
         return: list of all the possible configurations and list of the hyperparameters' names
         '''
-
+        done_configurations = []
+        if recovery:
+            done_configurations, success = self.__restore_backup(hyperparameters.keys())
+            
+            if not success:
+                Raise(ValueError('The specified hyperparameters not correspond to backup data found'))
+        
+        
         configurations = []
         names = list(hyperparameters.keys())
 
@@ -220,11 +248,11 @@ class ModelSelection:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
 
-        configurations = list(itertools.product(*configurations))
-
+        configurations = [item for item in list(itertools.product(*configurations)) if item not in done_configurations]
+        
         return configurations, names
 
-    def __merge_csv_file(self, results_file_name:str, n_proc:int = 1):
+    def __merge_csv_file(self, results_file_name:str):
         '''
         Merge the results of the processes in a single file
 
@@ -234,14 +262,16 @@ class ModelSelection:
         return: -
         '''
 
-        backup_file = [f'temp_{i}.csv' for i in range(n_proc)]
+        backup_file = [f for f in os.listdir(self.partials_backup) if os.path.isfile(f) and f.__contains__(self.partials_backup_prefix)]
+         
         df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
-        df.to_csv(results_file_name, index=False)
-
+        
         for file in backup_file:
             os.remove(file)
+            
+        df.to_csv(results_file_name, index=False)
 
-    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1):
+    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
         '''
         Implementation of the grid search algorithm
 
@@ -255,7 +285,8 @@ class ModelSelection:
         return: the best hyperparameters' configuration
         '''
         
-        configurations, names = self.__get_configurations(hyperparameters)
+        hyperparameters = dict(sorted(hyperparameters.items()))
+        configurations, names = self.__get_configurations(hyperparameters, recovery)
 
         if n_proc == 1: # sequential execution
             self.__train_modelKF(data_set, configurations, names, k_folds, self.backup)
@@ -264,6 +295,7 @@ class ModelSelection:
         remainder = len(configurations) % n_proc
         single_conf_size = int(len(configurations) / n_proc)
         start = end = 0
+        j = 0
         proc_pool = []
         parent_dir = Path(self.backup).parent.absolute()
 
@@ -274,8 +306,9 @@ class ModelSelection:
             else:
                 end += single_conf_size
             
+            j = i+1
             process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
-                                                                                 names, k_folds, os.path.join(parent_dir, f'temp_{i}.csv')))
+                                                                                 names, k_folds, os.path.join(parent_dir, f''+ self.partials_backup_prefix +'{j}.csv')))
             proc_pool.append(process)
             process.start()
             
@@ -285,17 +318,6 @@ class ModelSelection:
             process.join()
 
         self.__merge_csv_file(self.backup, n_proc)
-
-    def restore_backup(self, backup_file:list):
-        '''
-        Restore model selection's state from a backup file (csv format)
-
-        param backup_file: backup file list to be used to restore the state
-        
-        return: -
-        '''
-
-        pass
     
     def __train_modelHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
                         hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 

@@ -213,7 +213,7 @@ class ModelSelection:
         return: -
         '''
         
-        restore_file = self.__merge_csv_file(self.partials_backup_prefix + "0.csv")
+        restore_file = self.__merge_csv_file(os.path.join(self.partials_backup_path, self.partials_backup_prefix + "0.csv"))
         
         csv = pandas.read_csv(restore_file)
         backup_hyperparameters = csv.columns.values.tolist()[:-1]
@@ -221,7 +221,7 @@ class ModelSelection:
         if hyperparameters is not None:
             if backup_hyperparameters == hyperparameters: return None, False
         
-        done_configurations = csv[csv.columns.difference(['stats'])].tolist()
+        done_configurations = csv[csv.columns.difference(['stats'])].values.tolist()
         
         return done_configurations, True
 
@@ -248,8 +248,8 @@ class ModelSelection:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
 
-        configurations = [item for item in list(itertools.product(*configurations)) if item not in done_configurations]
-        
+        # TODO: testare se funziona (l'errore sembrava essere solo il fatto che tuple != list)
+        configurations = [item for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
         return configurations, names
 
     def __merge_csv_file(self, results_file_name:str):
@@ -261,15 +261,18 @@ class ModelSelection:
 
         return: -
         '''
+        
+        backup_file = [f for f in os.listdir(self.partials_backup_path) if f.startswith(self.partials_backup_prefix)]
 
-        backup_file = [f for f in os.listdir(self.partials_backup) if os.path.isfile(f) and f.__contains__(self.partials_backup_prefix)]
-         
+        backup_file = list(map(lambda f: os.path.join(self.partials_backup_path, f), backup_file))
         df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
         
         for file in backup_file:
             os.remove(file)
             
         df.to_csv(results_file_name, index=False)
+
+        return results_file_name
 
     def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
         '''
@@ -297,7 +300,10 @@ class ModelSelection:
         start = end = 0
         j = 0
         proc_pool = []
-        parent_dir = Path(self.backup).parent.absolute()
+        partial_data_dir = Path(self.partials_backup_path).absolute()
+
+        if not os.path.exists(partial_data_dir):
+            os.makedirs(partial_data_dir)
 
         for i in range(n_proc): # distribute equally the workload among the processes
             start = end
@@ -307,8 +313,9 @@ class ModelSelection:
                 end += single_conf_size
             
             j = i+1
+            print(os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv'))
             process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
-                                                                                 names, k_folds, os.path.join(parent_dir, f''+ self.partials_backup_prefix +'{j}.csv')))
+                                                                                 names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')))
             proc_pool.append(process)
             process.start()
             
@@ -317,7 +324,7 @@ class ModelSelection:
         for process in proc_pool: # join all the terminated processes
             process.join()
 
-        self.__merge_csv_file(self.backup, n_proc)
+        self.__merge_csv_file(self.backup)
     
     def __train_modelHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
                         hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 

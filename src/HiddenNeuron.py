@@ -96,7 +96,9 @@ class HiddenNeuron(ABCNeuron):
         '''
 
         # here we compute the weight update if Tikhonov is used
-        weight_update = (learning_rate * self.partial_weight_update) - (lambda_tikhonov * self.w)
+        tmp = np.copy(self.w)
+        tmp[0] = 0 # avoid to regularize the bias
+        weight_update = (learning_rate * self.partial_weight_update) - (lambda_tikhonov * tmp)
         
         # the momentum influence in the weight_update is calculated separated Tikhonov
         weight_update = weight_update - (self.old_weight_update * alpha_momentum)

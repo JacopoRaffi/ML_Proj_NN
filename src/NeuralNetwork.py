@@ -18,7 +18,7 @@ import math
 
 # TODO: nesterov momentum
 
-# TODO: dalle slide
+# TODO: dalle slide (forse fatto)
 '''Note that often the bias w0
 is omitted from the regularizer (because
 its inclusion causes the results to be not independent from target

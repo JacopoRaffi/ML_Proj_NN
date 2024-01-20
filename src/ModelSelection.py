@@ -125,7 +125,7 @@ class ModelSelection:
             Raise(ValueError('Backup file missing'))
             
         self.partials_backup_prefix = 'tmp_'
-        self.partials_backup_path = '..\\data\\gs_data\\partial'
+        self.partials_backup_path = '..\\data\\gs_data\\backup'
         self.backup = cv_backup
         self.default_values =  {
         'range_min' : -0.75,

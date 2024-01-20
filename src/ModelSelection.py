@@ -10,6 +10,7 @@ import pandas
 import itertools
 import csv
 import os
+import ast
 import json
 
 from MyProcess import *
@@ -192,7 +193,6 @@ class ModelSelection:
             if not success:
                 Raise(ValueError('The specified hyperparameters not correspond to backup data found'))
         
-        
         configurations = []
         names = list(hyperparameters.keys())
 
@@ -200,8 +200,8 @@ class ModelSelection:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
 
-        # TODO: testare se funziona (l'errore sembrava essere solo il fatto che tuple != list)
         configurations = [item for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
+
         return configurations, names
 
     def __merge_csv_file(self, results_file_name:str):
@@ -242,11 +242,10 @@ class ModelSelection:
 
         '''   
         
-        print('peniluz')
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats']) # TODO: il writer è necessario, è troppo pesante?
+            writer.writerow(hyperparameters_name + ['stats'])
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
             writer = csv.writer(back_up)
@@ -258,6 +257,7 @@ class ModelSelection:
                 grid_val[hyperparameters_name[i]] = hyper_param
 
             # create a new model
+            grid_val['topology'] = ast.literal_eval(grid_val['topology'])
             args_init = [grid_val[key] for key in self.inzialization_arg_names]
             nn = NeuralNetwork(*args_init)
             # train the model
@@ -290,8 +290,6 @@ class ModelSelection:
 
         return: the best hyperparameters' configuration
         '''
-        
-        
         
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, recovery)

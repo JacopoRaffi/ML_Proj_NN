@@ -19,8 +19,6 @@ from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
 
 
-#TODO implementare il ripristino (il main ricomputerà le configurazioni eliminando quelle già eseguite e salvate nei backup.)
-#                                   le restanti saranno ridistribuite trai processi)
 #TODO (opzionale) ottimizzare
 
 
@@ -329,8 +327,7 @@ class ModelSelection:
         self.__merge_csv_file(self.backup)
     
     def __train_modelHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
-                        hyperparameters_name:list, topology:dict = {}, topology_name:str = 'standard', 
-                        backup:str = None):
+                        hyperparameters_name:list, backup:str = None, verbose:bool = True):
         
         '''
         Train the model with the given configuration of hyperparameters
@@ -339,89 +336,41 @@ class ModelSelection:
         param validation_set: validation set to be used for hold out validation
         param hyperparameters: list of hyperparameters' configurations to be used for validation
         param hyperparameters_name: list of hyperparameters' names
-        param topology: topology of the neural network
-        param topology_name: name of the topology
-        param lock: lock to be used to write on the backup file
         param: backup: backup file
+        param: verbose: verbosity of the algorithm
 
         return: -
         '''
-        
-        values_to_use = {
-        'range_min' : -0.75,
-        'range_max' : 0.75,
-        'fan_in' : True,
-        'random_state' : None,
-
-        'lambda_tikhonov' : 0.0,
-        'alpha_momentum' : 0.5,
-        'learning_rate' : 0.1,
-        'batch_size' : 1,
-        'max_epochs' : 100,
-        'error_decrease_tolerance' : 0.0001,
-        'patience' : 10,
-        'min_epochs' : 0,
-        'metrics':[ErrorFunctions.mean_squared_error, ],
-
-        'collect_data':True, 
-        'collect_data_batch':False, 
-        'verbose':False
-        }
-        inzialization_arg_names = ['range_min', 'range_max', 'fan_in', 'random_state']
-        train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
-                        'collect_data_batch', 'verbose']
 
         if os.path.isfile(backup):
             back_up = open(backup, 'a')
             writer = csv.writer(back_up)
         else:
-            back_up = open(backup, 'w+')
+            back_up = open(backup, 'a+')
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['topology', 'validation_error_mean', 'validation_error_variance'])
+            writer.writerow(hyperparameters_name + ['stats'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
-            '''for index, hyper_param in enumerate(configuration):
-                if hyperparameters_name[index] == 'lambda_tikhonov':
-                    lambda_tikhonov = hyper_param
-
-                elif hyperparameters_name[index] == 'alpha_momentum':
-                    alpha_momentum = hyper_param
-
-                elif hyperparameters_name[index] == 'learning_rate':
-                    learning_rate = hyper_param
-
-                elif hyperparameters_name[index] == 'batch_size':
-                    batch_size = hyper_param
-                
-                elif hyperparameters_name[index] == 'max_epochs':
-                    max_epochs = hyper_param
-
-                elif hyperparameters_name[index] == 'error_decrease_tolerance':
-                    error_decrease_tolerance = hyper_param
-
-                elif hyperparameters_name[index] == 'patience':
-                    patience = hyper_param
-
-                elif hyperparameters_name[index] == 'min_epochs':
-                    min_epochs = hyper_param'''
             grid_val = self.default_values.copy()
             for i, key in enumerate(hyperparameters_name): grid_val[key] = configuration[i]
 
             # create a new model
-            args_init = [grid_val[key] for key in inzialization_arg_names]
-            nn = NeuralNetwork(topology, *args_init)
+            grid_val['topology'] = ast.literal_eval(grid_val['topology'])
+            args_init = [grid_val[key] for key in self.inzialization_arg_names]
+            nn = NeuralNetwork(*args_init)
             # train the model
-            args_train = [grid_val[key] for key in train_arg_names]
+            args_train = [grid_val[key] for key in self.train_arg_names]
             
 
-            stats = nn.ho_train(training_set, validation_set, *args_train)      
-            writer.writerow(list(configuration) + [topology_name, stats['validation_mean_squared_error'][-1], 0])
+            stats = nn.train(training_set, validation_set, *args_train)      
+            writer.writerow(list(configuration) + [stats])
             back_up.flush()
+        
+        back_up.close()
 
     def grid_searchHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:dict, 
-                      topology:dict, n_proc:int = 1, topology_name:str = 'standard'):
+                      n_proc:int = 1, recovery:bool = False):
         '''
         Implementation of the grid search algorithm using hold out validation
 
@@ -435,24 +384,33 @@ class ModelSelection:
         return: the best hyperparameters' configuration
         
         '''
-        #TODO: ottimizzare caso con singolo processo, chiama direttamente la funzione _train_modelHO
-        configurations, names = self.__get_configurations(hyperparameters)
+        
+        hyperparameters = dict(sorted(hyperparameters.items()))
+        configurations, names = self.__get_configurations(hyperparameters, recovery)
+
+        if n_proc == 1: # sequential execution
+            self.__train_modelHO(training_set, validation_set, configurations, names, self.backup)
+            return
 
         remainder = len(configurations) % n_proc
         single_conf_size = int(len(configurations) / n_proc)
         start = end = 0
+        j = 0
         proc_pool = []
         
+        partial_data_dir = Path(self.partials_backup_path).absolute()
+        if not os.path.exists(partial_data_dir):
+            os.makedirs(partial_data_dir)
+
         for i in range(n_proc): # distribute equally the workload among the processes
             start = end
             if remainder > 0:
                 end += single_conf_size + 1
             else:
                 end += single_conf_size
-            
+            j = i+1
             process = multiprocessing.Process(target=self.__train_modelHO, args=(training_set, validation_set, configurations[start:end],
-                                                                                 names, topology, topology_name,
-                                                                                 f'backup_{i}.csv',))
+                                                                                 names, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv'), ))
             proc_pool.append(process)
             process.start()
             
@@ -461,4 +419,4 @@ class ModelSelection:
         for process in proc_pool: # join all the terminated processes
             process.join()
 
-        self.__merge_csv_file(self.backup, n_proc)
+        self.__merge_csv_file(self.backup)

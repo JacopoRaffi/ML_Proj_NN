@@ -362,7 +362,9 @@ class NeuralNetwork:
               error_decrease_tolerance:float = 0.0001, 
               patience: int = 8, 
               min_epochs: int = 0,
-              learning_rate:float = 0.01, 
+              learning_rate:float = 0.01,
+              lr_decay_tau:int = 0,
+              eta_tau:float = 0.0, 
               lambda_tikhonov:float = 0.0, 
               alpha_momentum:float = 0.0, 
               metrics:list=[], 
@@ -384,6 +386,8 @@ class NeuralNetwork:
         param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
         param patience: the number of epochs to wait when a "no more significant error decrease" occurs
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        param lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
+        param eta_tau: Eta hyperparameter at iteration tau if the learning rate decay procedure is adopted
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
 
@@ -467,7 +471,7 @@ class NeuralNetwork:
                 self.__backpropagation(sample[self.input_size:])
 
             for neuron in self.neurons[self.input_size:]:
-                neuron.update_weights(learning_rate, lambda_tikhonov, alpha_momentum)
+                neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum)
 
             # stats for every batch
             if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values
@@ -526,9 +530,11 @@ class NeuralNetwork:
             stats['mean_epoch_train_time'] = stats['total_train_time']/stats['epochs']
         return stats
         
-
-    def reset_weights(self):
+    def reset(self):
         self.__init_weights()
+        for neuron in self.neurons[self.input_size:]:
+            neuron.steps = 0
+        
     
         
         

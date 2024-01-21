@@ -29,6 +29,8 @@ class HiddenNeuron(ABCNeuron):
         the list for the additional (optional) parameters of the activation function
     net : float
         inner product between the weight vector and the unit's input at a given iteration
+    steps : int
+        number of learning steps (weight update) undergone by the neuron
     last_predict : float
         output of the neuron (instance variable exploited for predictions out of training)
     partial_weight_update : array of float
@@ -65,6 +67,7 @@ class HiddenNeuron(ABCNeuron):
         self.f_parameters = list(args) # creates the list for the additional (optional) parameters of the activation function
         self.net = 0.0 # inner product between the weight vector and the unit's input at a given iteration
         
+        self.steps = 0 # number of learning steps (weight update) undergone by the neuron
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
         self.partial_weight_update = np.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
         self.old_weight_update = np.array([]) # the old weight update value DeltaW
@@ -84,32 +87,43 @@ class HiddenNeuron(ABCNeuron):
         
         #self.w = self.w + alpha_momentum*self.old_weight_update
     
-    def update_weights(self, learning_rate:float = 1, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+    def update_weights(self, learning_rate:float = 1, lr_decay_tau:int = 0, eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
         '''
         Updates the weight vector (w) of the Neuron
         
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        param lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
+        param eta_tau: Eta hyperparameter at iteration tau if the learning rate decay procedure is adopted
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
 
         return: -
         '''
-
-        # here we compute the weight update if Tikhonov is used
+        # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
+        # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
+        self.steps += 1
+        eta = learning_rate
+        if lr_decay_tau > 0:
+            alpha = self.steps/lr_decay_tau
+            eta = learning_rate * (1 - alpha) + alpha * eta_tau
+            
+        # here is the final gradient multiplied by the learning rate
+        weight_update = (eta * self.partial_weight_update)
+        
+        # here we add the tikhonov regularization
         tmp = np.copy(self.w)
         tmp[0] = 0 # avoid to regularize the bias
-        weight_update = (learning_rate * self.partial_weight_update) - (lambda_tikhonov * tmp)
+        weight_update = weight_update - (lambda_tikhonov * tmp)
         
-        # the momentum influence in the weight_update is calculated separated Tikhonov
-        weight_update = weight_update - (self.old_weight_update * alpha_momentum)
+        # here we add the momentum influence on the final weight update
+        weight_update = weight_update + (self.old_weight_update * alpha_momentum)
 
-
+        # the actual update
         self.w += weight_update
+        # reset of every accumulative variable used
         self.old_weight_update = weight_update
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
-
-        
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
         '''

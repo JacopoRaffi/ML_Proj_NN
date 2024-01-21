@@ -74,7 +74,7 @@ class ModelSelection:
         # while all others are used for training the model validated on it.
         for i in range(k):
             split_index += split_size
-            model.reset_weights() # reset of the network to proceeds towards the next training (next fold)
+            model.reset() # reset of the network to proceeds towards the next training (next fold)
             training_set = np.append(data_set[:split_size*i], data_set[split_size*(i + 1):], axis=0)
             validation_set = data_set[split_size*i : split_size*(i + 1)]
             
@@ -153,7 +153,6 @@ class ModelSelection:
         self.train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
                        'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
                         'collect_data_batch', 'verbose']
-
     
     def __restore_backup(self, hyperparameters:list = None):
         '''
@@ -224,7 +223,7 @@ class ModelSelection:
 
         return results_file_name
 
-    def __train_modelKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
+    def __process_task_trainKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
                         k_folds:int = 1, backup:str = None, verbose:bool = True):
         '''
         Train the model with the given hyperparameters and the number of folds
@@ -314,7 +313,7 @@ class ModelSelection:
                 end += single_conf_size
             
             j = i+1
-            process = multiprocessing.Process(target=self.__train_modelKF, args=(data_set, configurations[start:end],
+            process = multiprocessing.Process(target=self.__process_task_trainKF, args=(data_set, configurations[start:end],
                                                                                  names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')))
             proc_pool.append(process)
             process.start()
@@ -326,7 +325,7 @@ class ModelSelection:
 
         self.__merge_csv_file(self.backup)
     
-    def __train_modelHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
+    def __process_task_trainHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
                         hyperparameters_name:list, backup:str = None, verbose:bool = True):
         
         '''
@@ -409,7 +408,7 @@ class ModelSelection:
             else:
                 end += single_conf_size
             j = i+1
-            process = multiprocessing.Process(target=self.__train_modelHO, args=(training_set, validation_set, configurations[start:end],
+            process = multiprocessing.Process(target=self.__process_task_trainHO, args=(training_set, validation_set, configurations[start:end],
                                                                                  names, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv'), ))
             proc_pool.append(process)
             process.start()

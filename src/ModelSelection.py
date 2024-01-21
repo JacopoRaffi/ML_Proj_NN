@@ -136,8 +136,8 @@ class ModelSelection:
         'lambda_tikhonov' : 0.0,
         'alpha_momentum' : 0.5,
         'learning_rate' : 0.1,
-        'lr_decay_tau' : 0.001,
-        'eta_tau' : 100,
+        'lr_decay_tau' : 0,
+        'eta_tau' : 0.01,
         'batch_size' : 1,
         'max_epochs' : 100,
         'error_decrease_tolerance' : 0.0001,
@@ -226,7 +226,7 @@ class ModelSelection:
         return results_file_name
 
     def __process_task_trainKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
-                        k_folds:int = 1, backup:str = None, verbose:bool = True):
+                        k_folds:int = 1, backup:str = None, verbose:bool = False):
         '''
         Train the model with the given hyperparameters and the number of folds
 

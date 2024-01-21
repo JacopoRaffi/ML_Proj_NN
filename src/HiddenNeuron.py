@@ -103,9 +103,11 @@ class HiddenNeuron(ABCNeuron):
         # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
         self.steps += 1
         eta = learning_rate
-        if lr_decay_tau > 0:
+        if self.steps < lr_decay_tau:
             alpha = self.steps/lr_decay_tau
             eta = learning_rate * (1 - alpha) + alpha * eta_tau
+        elif lr_decay_tau > 0:
+            eta = eta_tau
             
         # here is the final gradient multiplied by the learning rate
         weight_update = (eta * self.partial_weight_update)

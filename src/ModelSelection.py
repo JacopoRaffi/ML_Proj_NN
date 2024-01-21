@@ -136,6 +136,8 @@ class ModelSelection:
         'lambda_tikhonov' : 0.0,
         'alpha_momentum' : 0.5,
         'learning_rate' : 0.1,
+        'lr_decay_tau' : 0.001,
+        'eta_tau' : 100,
         'batch_size' : 1,
         'max_epochs' : 100,
         'error_decrease_tolerance' : 0.0001,
@@ -151,7 +153,7 @@ class ModelSelection:
         }
         self.inzialization_arg_names = ['topology', 'range_min', 'range_max', 'fan_in', 'random_state']
         self.train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
+                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
                         'collect_data_batch', 'verbose']
     
     def __restore_backup(self, hyperparameters:list = None):
@@ -258,6 +260,8 @@ class ModelSelection:
             args_init = [grid_val[key] for key in self.inzialization_arg_names]
             nn = NeuralNetwork(*args_init)
             # train the model
+            grid_val['learning_rate'] = grid_val['learning_rate'] / grid_val['batch_size']
+            grid_val['eta_tau'] = grid_val['eta_tau']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
             if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
             
@@ -292,7 +296,7 @@ class ModelSelection:
         configurations, names = self.__get_configurations(hyperparameters, recovery)
 
         if n_proc == 1: # sequential execution
-            self.__train_modelKF(data_set, configurations, names, k_folds, self.backup)
+            self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return
 
         remainder = len(configurations) % n_proc
@@ -388,7 +392,7 @@ class ModelSelection:
         configurations, names = self.__get_configurations(hyperparameters, recovery)
 
         if n_proc == 1: # sequential execution
-            self.__train_modelHO(training_set, validation_set, configurations, names, self.backup)
+            self.__process_task_trainHO(training_set, validation_set, configurations, names, self.backup)
             return
 
         remainder = len(configurations) % n_proc

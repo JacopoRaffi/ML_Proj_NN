@@ -18,7 +18,7 @@ def mean_euclidean_error(outputs:numpy.ndarray, targets:numpy.ndarray):
         print(diff**2)
         sum += math.sqrt(numpy.sum(diff**2))
 
-    return sum/len(diff)
+    return sum/len(outputs)
 
 '''def mean_euclidean_error(outputs:numpy.ndarray, targets:numpy.ndarray): #TODO: perché non funziona? solo qunado facciamo model selection
     

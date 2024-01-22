@@ -103,8 +103,8 @@ class ModelSelection:
             for j, met in enumerate(metrics):
                 val_errors[i, j] = met(model.predict_array(validation_set[:,:model.input_size]), validation_set[:,model.input_size:])
         
-        stats['mean_metrics'] = np.mean(val_errors, axis=0)
-        stats['variance_metrics'] = np.var(val_errors, axis=0)
+        stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
+        stats['variance_metrics'] = list(np.var(val_errors, axis=0))
         return stats
 
     def __init__(self, cv_backup:str):
@@ -140,6 +140,7 @@ class ModelSelection:
         'eta_tau' : 0.01,
         'batch_size' : 1,
         'max_epochs' : 100,
+        'nesterov' : False,
         'error_decrease_tolerance' : 0.0001,
         'patience' : 10,
         'min_epochs' : 0,
@@ -153,7 +154,7 @@ class ModelSelection:
         }
         self.inzialization_arg_names = ['topology', 'range_min', 'range_max', 'fan_in', 'random_state']
         self.train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'metrics', 'collect_data', 
+                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'nesterov', 'metrics', 'collect_data', 
                         'collect_data_batch', 'verbose']
     
     def __restore_backup(self, hyperparameters:list = None):
@@ -244,7 +245,7 @@ class ModelSelection:
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats'])
+            writer.writerow(hyperparameters_name + ['stats', 'mean_metrics', 'variance_metrics'])
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
             writer = csv.writer(back_up)
@@ -266,14 +267,10 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
             
             
-            
+            print(grid_val['metrics'])
             stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
-            
-            # TODO: se ci piace ottimizzare anche le nostre madri
-            # potremmo accumulare un po di dati alla volta e poi scrverli tutti assieme ma non so se ha senso
-            # back_up = open(backup, 'a') 
-            # writer = csv.writer(back_up)
-            writer.writerow(list(configuration) + [stats]) 
+            print(stats['mean_metrics'])
+            writer.writerow(list(configuration) + [stats, stats['mean_metrics'], stats['variance_metrics']]) 
             back_up.flush()
 
         back_up.close()

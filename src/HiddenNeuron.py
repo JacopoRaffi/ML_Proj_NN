@@ -75,8 +75,7 @@ class HiddenNeuron(ABCNeuron):
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
     
-    # TODO: farlo per bene per ora azzoppo tutto
-    #def add_nesterov_momentum(self, alpha_momentum:float = 0.0):
+    def add_nesterov_momentum(self, alpha_momentum:float = 0.0):
         '''
         Updates the weight vector (w) of the Neuron with Nesterov's Momentum
         this update should be done before the next minibatch learning iteration
@@ -85,9 +84,10 @@ class HiddenNeuron(ABCNeuron):
         :return: -
         '''
         
-        #self.w = self.w + alpha_momentum*self.old_weight_update
+        self.w = self.w + alpha_momentum*self.old_weight_update
     
-    def update_weights(self, learning_rate:float = 1, lr_decay_tau:int = 0, eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0):
+    def update_weights(self, learning_rate:float = 1, lr_decay_tau:int = 0, 
+                       eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
         '''
         Updates the weight vector (w) of the Neuron
         
@@ -120,10 +120,12 @@ class HiddenNeuron(ABCNeuron):
         # here we add the momentum influence on the final weight update
         weight_update = weight_update + (self.old_weight_update * alpha_momentum)
 
-        # the actual update
+        # if nesterov momentum is exploited, we must apply the weight update on the original weight vector
+        self.w -= alpha_momentum * self.old_weight_update * nesterov_momentum 
+        
         self.w += weight_update
         # reset of every accumulative variable used
-        self.old_weight_update = weight_update
+        self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
         

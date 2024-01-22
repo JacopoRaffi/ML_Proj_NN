@@ -367,6 +367,7 @@ class NeuralNetwork:
               eta_tau:float = 0.0, 
               lambda_tikhonov:float = 0.0, 
               alpha_momentum:float = 0.0, 
+              nesterov:bool = False,
               metrics:list=[], 
               collect_data:bool=True, 
               collect_data_batch:bool=False, 
@@ -406,8 +407,6 @@ class NeuralNetwork:
 
         #TODO Controllare i valori e capire se sono permessi (ad esempio batch_size > 0 ecc...)
 
-        # TODO: magari creare una nuova funzione train pubblica e rendere questa 'privata' per gestire meglio gli input
-        # TODO: il learning rate deve dipendere dalla dimensione della batch!!!!
         epochs = 0
         exhausting_patience = patience
         last_error_decrease_percentage = 1
@@ -430,6 +429,7 @@ class NeuralNetwork:
             'learning_rate':learning_rate,
             'lambda_tikhonov':lambda_tikhonov,
             'alpha_momentum':alpha_momentum,
+            'nesterov':nesterov,
 
             # -- training stats --
             # epoch stats
@@ -466,12 +466,17 @@ class NeuralNetwork:
         while epochs < max_epochs and exhausting_patience > 0:
             
             # batch
+
+            if nesterov: 
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.add_nesterov_momentum(alpha_momentum)
+
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
                 self.__backpropagation(sample[self.input_size:])
 
             for neuron in self.neurons[self.input_size:]:
-                neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum)
+                neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
 
             # stats for every batch
             if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values

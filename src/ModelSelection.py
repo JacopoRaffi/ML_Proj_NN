@@ -267,9 +267,8 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
             
             
-            print(grid_val['metrics'])
             stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
-            print(stats['mean_metrics'])
+
             writer.writerow(list(configuration) + [stats, stats['mean_metrics'], stats['variance_metrics']]) 
             back_up.flush()
 

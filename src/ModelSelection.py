@@ -69,7 +69,7 @@ class ModelSelection:
         #training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
         #validation_set = data_set[split_index : split_index + split_size]
         
-        
+        np.random.shuffle(data_set)
         # At each iteration only one of the K subsets of data is used as the validation set, 
         # while all others are used for training the model validated on it.
         for i in range(k):
@@ -100,8 +100,10 @@ class ModelSelection:
                     stats['training_batch_' + mes.__name__].append(new_stats['training_batch_' + mes.__name__])
                     stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
                         
+            outputs = model.predict_array(validation_set[:,:model.input_size])
+            targets = validation_set[:,model.input_size:]
             for j, met in enumerate(metrics):
-                val_errors[i, j] = met(model.predict_array(validation_set[:,:model.input_size]), validation_set[:,model.input_size:])
+                val_errors[i, j] = met(outputs, targets)#model.predict_array(validation_set[:,:model.input_size]), validation_set[:,model.input_size:])
         
         stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))

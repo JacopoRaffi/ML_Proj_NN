@@ -203,6 +203,15 @@ class ModelSelection:
                 configurations.append(hyperparameters[hyper_param])
 
         configurations = [item for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
+        
+        #TODO cancellare configurazioni eccesso (invalide)
+        '''
+        for c in configurations:
+                
+            if c[names.index("adamax")] == True:
+                if c[]
+        '''
+        
 
         return configurations, names
 
@@ -247,7 +256,7 @@ class ModelSelection:
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats', 'mean_metrics', 'variance_metrics'])
+            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'mean_metrics', 'variance_metrics'])
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
             writer = csv.writer(back_up)
@@ -271,7 +280,7 @@ class ModelSelection:
             
             stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
 
-            writer.writerow(list(configuration) + [stats, stats['mean_metrics'], stats['variance_metrics']]) 
+            writer.writerow(list(configuration) + [stats, grid_val['metrics'] , stats['mean_metrics'], stats['variance_metrics']]) 
             back_up.flush()
 
         back_up.close()

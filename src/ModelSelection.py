@@ -138,11 +138,15 @@ class ModelSelection:
         'lambda_tikhonov' : 0.0,
         'alpha_momentum' : 0.5,
         'learning_rate' : 0.1,
+        'adamax_learning_rate': 0.002,
         'lr_decay_tau' : 0,
         'eta_tau' : 0.01,
         'batch_size' : 1,
         'max_epochs' : 100,
         'nesterov' : False,
+        'adamax': False,
+        'exp_decay_rate_1':0.9,
+        'exp_decay_rate_2':0.999,
         'error_decrease_tolerance' : 0.0001,
         'patience' : 10,
         'min_epochs' : 0,
@@ -180,7 +184,7 @@ class ModelSelection:
         
         return done_configurations, True
 
-    def __get_configurations(self, hyperparameters:dict, recovery:bool = False):
+    def __get_configurations(self, hyperparameters:dict, constraints:dict = {}, recovery:bool = False):
         '''
         Get all the possible configurations of the hyperparameters
 
@@ -202,17 +206,27 @@ class ModelSelection:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
 
-        configurations = [item for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
+        configurations = [list(item) for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
         
-        #TODO cancellare configurazioni eccesso (invalide)
-        '''
+        print("Configurations total: ", configurations)
+        len1 = len(configurations)
         for c in configurations:
-                
-            if c[names.index("adamax")] == True:
-                if c[]
-        '''
-        
+            for key in constraints:
+                constraint_func = constraints[key][0]
+                if constraint_func(c[names.index(key)]):
+                    not_valid = constraints[key][1]
+                else:
+                    not_valid = constraints[key][2]
 
+                for constraint in not_valid:
+                    c[names.index(constraint)] = self.default_values[constraint]
+
+        configurations.sort()
+        configurations = list(k for k,_ in itertools.groupby(configurations))
+        len2 = len(configurations)
+        print("Configurations to be tested: ", configurations)
+
+        print("Configurations removed: ", len1, len2, len1-len2)
         return configurations, names
 
     def __merge_csv_file(self, results_file_name:str):
@@ -268,6 +282,8 @@ class ModelSelection:
                 grid_val[hyperparameters_name[i]] = hyper_param
 
             # create a new model
+            
+            metrics_name = [m.__name__ for m in grid_val['metrics']]
             grid_val['topology'] = ast.literal_eval(grid_val['topology'])
             args_init = [grid_val[key] for key in self.inzialization_arg_names]
             nn = NeuralNetwork(*args_init)
@@ -280,12 +296,12 @@ class ModelSelection:
             
             stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
 
-            writer.writerow(list(configuration) + [stats, grid_val['metrics'] , stats['mean_metrics'], stats['variance_metrics']]) 
+            writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics']]) 
             back_up.flush()
 
         back_up.close()
 
-    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
+    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, constraints:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
         '''
         Implementation of the grid search algorithm
 
@@ -300,7 +316,7 @@ class ModelSelection:
         '''
         
         hyperparameters = dict(sorted(hyperparameters.items()))
-        configurations, names = self.__get_configurations(hyperparameters, recovery)
+        configurations, names = self.__get_configurations(hyperparameters, constraints, recovery)
 
         if n_proc == 1: # sequential execution
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
@@ -358,7 +374,7 @@ class ModelSelection:
         else:
             back_up = open(backup, 'a+')
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats'])
+            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'errors'])
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:
@@ -366,6 +382,7 @@ class ModelSelection:
             for i, key in enumerate(hyperparameters_name): grid_val[key] = configuration[i]
 
             # create a new model
+            metrics_name = [m.__name__ for m in grid_val['metrics']]
             grid_val['topology'] = ast.literal_eval(grid_val['topology'])
             args_init = [grid_val[key] for key in self.inzialization_arg_names]
             nn = NeuralNetwork(*args_init)
@@ -373,8 +390,9 @@ class ModelSelection:
             args_train = [grid_val[key] for key in self.train_arg_names]
             
 
-            stats = nn.train(training_set, validation_set, *args_train)      
-            writer.writerow(list(configuration) + [stats])
+            stats = nn.train(training_set, validation_set, *args_train)
+            metrics_error = [stats['validation_' + mes.__name__][-1] for mes in grid_val['metrics']]
+            writer.writerow(list(configuration) + [stats, metrics_name, ])
             back_up.flush()
         
         back_up.close()

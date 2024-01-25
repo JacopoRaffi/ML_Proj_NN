@@ -41,6 +41,7 @@ def sigmoid(input, slope, *args):
     
     return: the results of the sigmoid function
     '''
+
     return 1/(1 + math.exp(-(input*slope)))
 
 def tanh(input, slope, *args):

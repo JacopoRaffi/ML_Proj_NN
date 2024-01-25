@@ -15,7 +15,6 @@ def mean_euclidean_error(outputs:numpy.ndarray, targets:numpy.ndarray):
 
     sum = 0
     for diff in (outputs-targets):
-        print(diff**2)
         sum += math.sqrt(numpy.sum(diff**2))
 
     return sum/len(outputs)

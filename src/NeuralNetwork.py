@@ -64,7 +64,14 @@ class NeuralNetwork:
         'min_epochs',
         'learning_rate',
         'lambda_tikhonov',
-        'alpha_momentum'}
+        'alpha_momentum',
+        'nesterov',
+        
+        'adamax',
+        'adamax_learning_rate',
+        'exp_decay_rates_1',
+        'exp_decay_rates_2',
+        }
     train_stats = {
         'epochs',
         'total_train_time',
@@ -82,6 +89,14 @@ class NeuralNetwork:
               'learning_rate', 
               'lambda_tikhonov', 
               'alpha_momentum', 
+              
+              'nesterov',
+              
+              'adamax',
+              'adamax_learning_rate',
+              'exp_decay_rates_1',
+              'exp_decay_rates_2',
+              
               'metrics', 
               'collect_data', 
               'collect_data_batch', 
@@ -132,26 +147,6 @@ class NeuralNetwork:
 
         return: the function corrisponding to the name as a callable
         '''
-        '''
-        if name == 'identity':
-            fun = ActivationFunctions.identity
-
-        elif name == 'sigmoid':
-            fun = ActivationFunctions.sigmoid
-
-        elif name == 'tanh':
-            fun = ActivationFunctions.tanh
-
-        elif name == 'softplus':
-            fun = ActivationFunctions.softplus
-
-        elif name == 'gaussian':
-            fun = ActivationFunctions.gaussian
-
-        elif name == 'gaussian':
-            fun = ActivationFunctions.gaussian
-        else:
-            raise ValueError(f"Activation function {name} not found")'''
 
         return getattr(ActivationFunctions, name)
 
@@ -368,6 +363,12 @@ class NeuralNetwork:
               lambda_tikhonov:float = 0.0, 
               alpha_momentum:float = 0.0, 
               nesterov:bool = False,
+              
+              adamax:bool = False,
+              adamax_learning_rate:float = 0.01,
+              exp_decay_rates_1:float = 0.9,
+              exp_decay_rates_2:float = 0.999,
+              
               metrics:list=[], 
               collect_data:bool=True, 
               collect_data_batch:bool=False, 
@@ -429,7 +430,13 @@ class NeuralNetwork:
             'learning_rate':learning_rate,
             'lambda_tikhonov':lambda_tikhonov,
             'alpha_momentum':alpha_momentum,
+            
             'nesterov':nesterov,
+            
+            'adamax':adamax,
+            'adamax_learning_rate':adamax_learning_rate,
+            'exp_decay_rates_1':exp_decay_rates_1,
+            'exp_decay_rates_2':exp_decay_rates_2,
 
             # -- training stats --
             # epoch stats
@@ -467,16 +474,21 @@ class NeuralNetwork:
             
             # batch
 
+            '''
             if nesterov: 
                 for neuron in self.neurons[self.input_size:]:
-                    neuron.add_nesterov_momentum(alpha_momentum)
+                    neuron.add_nesterov_momentum(alpha_momentum)'''
 
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
                 self.__backpropagation(sample[self.input_size:])
 
-            for neuron in self.neurons[self.input_size:]:
-                neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
+            if adamax:
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rates_1, exp_decay_rates_2, lambda_tikhonov)
+            else:
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
 
             # stats for every batch
             if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values
@@ -499,7 +511,7 @@ class NeuralNetwork:
                 epochs += 1
                 batch_index = batch_index%training_set_length
 
-                new_error = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                 if last_error != 0:
                     last_error_decrease_percentage = abs(last_error - new_error)/last_error    
                 last_error = new_error
@@ -529,6 +541,10 @@ class NeuralNetwork:
                     # take training time for the batch
                     start_time = datetime.datetime.now()
 
+        # if nesterov is exploited, the weight needs to be modified for the final use
+        for neuron in self.neurons[self.input_size:]:
+            neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
+            
         # final stats gathering
         if collect_data:
             stats['epochs'] = epochs
@@ -537,8 +553,6 @@ class NeuralNetwork:
         
     def reset(self):
         self.__init_weights()
-        for neuron in self.neurons[self.input_size:]:
-            neuron.steps = 0
         
     
         

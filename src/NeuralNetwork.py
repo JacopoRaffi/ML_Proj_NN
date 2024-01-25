@@ -59,7 +59,8 @@ class NeuralNetwork:
         'training_set_len',
         'minibatch_size',
         'max_epochs',
-        'error_decrease_tolerance',
+        'retraing_es_error',
+        'error_increase_tolerance',
         'patience',
         'min_epochs',
         'learning_rate',
@@ -83,7 +84,8 @@ class NeuralNetwork:
               'validation_set', 
               'batch_size', 
               'max_epochs', 
-              'error_decrease_tolerance', 
+              'retraing_es_error',
+              'error_increase_tolerance', 
               'patience', 
               'min_epochs',
               'learning_rate', 
@@ -354,7 +356,8 @@ class NeuralNetwork:
               validation_set:np.ndarray = None, 
               batch_size:int = 1, 
               max_epochs:int = 1024, 
-              error_decrease_tolerance:float = 0.0001, 
+              retraing_es_error = np.Inf,
+              error_increase_tolerance:float = 0.0001, 
               patience: int = 8, 
               min_epochs: int = 0,
               learning_rate:float = 0.01,
@@ -385,7 +388,7 @@ class NeuralNetwork:
         param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
             -> "mee": Mean Euclidean Error
             -> "lms": Least Mean Square
-        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
+        param error_increase_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
         param patience: the number of epochs to wait when a "no more significant error decrease" occurs
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         param lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
@@ -410,9 +413,10 @@ class NeuralNetwork:
 
         epochs = 0
         exhausting_patience = patience
-        last_error_decrease_percentage = 1
+        last_error_increase_percentage = 0
         last_error = 0
         new_error = 0
+        tr_err = 0
         training_set_length = len(training_set)
         batch_index = 0
         if batch_size > training_set_length: batch_size = training_set_length
@@ -424,7 +428,8 @@ class NeuralNetwork:
             'training_set_len':training_set_length,
             'minibatch_size':batch_size,
             'max_epochs':max_epochs,
-            'error_decrease_tolerance':error_decrease_tolerance,
+            'retraing_es_error':retraing_es_error,
+            'error_increase_tolerance':error_increase_tolerance,
             'patience':patience,
             'min_epochs':min_epochs,
             'learning_rate':learning_rate,
@@ -437,6 +442,9 @@ class NeuralNetwork:
             'adamax_learning_rate':adamax_learning_rate,
             'exp_decay_rates_1':exp_decay_rates_1,
             'exp_decay_rates_2':exp_decay_rates_2,
+
+            # --early stopping stats--
+            'best_validation_training_error': np.Inf,
 
             # -- training stats --
             # epoch stats
@@ -470,7 +478,7 @@ class NeuralNetwork:
             start_time = datetime.datetime.now()
 
         # start training cycle
-        while epochs < max_epochs and exhausting_patience > 0:
+        while (epochs < max_epochs) and (exhausting_patience > 0) and (tr_err < retraing_es_error):
             
             # batch
 
@@ -503,7 +511,7 @@ class NeuralNetwork:
             #TODO: stiamo facendo il controllo sull'errore dell'iterazione prima, non good
             batch_index += batch_size
             if batch_index >= training_set_length:
-                if epochs > min_epochs and last_error_decrease_percentage <= error_decrease_tolerance:
+                if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
                     exhausting_patience -= 1
                 else:
                     exhausting_patience = patience
@@ -511,10 +519,16 @@ class NeuralNetwork:
                 epochs += 1
                 batch_index = batch_index%training_set_length
 
-                new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
-                if last_error != 0:
-                    last_error_decrease_percentage = abs(last_error - new_error)/last_error    
-                last_error = new_error
+                tr_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+
+                if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
+                    new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
+                    if last_error != 0 and new_error > last_error:
+                        last_error_increase_percentage = last_error - new_error/last_error    
+                    else:
+                        last_error_increase_percentage = 0
+                        stats['best_validation_training_error'] = min(stats['best_validation_training_error'], tr_err)
+                    last_error = new_error
 
                 # stats for every epoch
                 if collect_data:
@@ -593,13 +607,13 @@ if __name__ == '__main__':
 
     batch_size = 20
     max_epochs = 250
-    error_decrease_tolerance = 0.0001
+    error_increase_tolerance = 0.0001
     patience = 20
 
     learning_rate = 0.0001/batch_size
     lambda_tikhonov = 0
     alpha_momentum = 0
 
-    stats = NN.train_2(training_set, batch_size, max_epochs, error_decrease_tolerance, patience, 
+    stats = NN.train_2(training_set, batch_size, max_epochs, error_increase_tolerance, patience, 
                     learning_rate, lambda_tikhonov, alpha_momentum)
     predictions = NN.predict_array(training_set)

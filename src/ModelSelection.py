@@ -62,6 +62,7 @@ class ModelSelection:
         split_size = math.floor(data_len/k)
         
         val_errors = np.empty((k, len(metrics)))
+        tr_errors = np.empty(k)
         stats = {}
         split_index = 0
         
@@ -79,6 +80,8 @@ class ModelSelection:
             validation_set = data_set[split_size*i : split_size*(i + 1)]
             
             new_stats = model.train(training_set, validation_set, *model_args)
+            tr_errors[i] = new_stats['best_validation_training_error']
+
             if not stats: # first iteration
                 for key in model.input_stats:
                     stats[key] = new_stats[key]
@@ -107,6 +110,8 @@ class ModelSelection:
         
         stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))
+        stats['mean_best_validation_training_error'] = np.mean(tr_errors)
+
         return stats
 
     def __init__(self, cv_backup:str):
@@ -143,11 +148,12 @@ class ModelSelection:
         'eta_tau' : 0.01,
         'batch_size' : 1,
         'max_epochs' : 100,
+        'retraing_es_error': np.inf,
         'nesterov' : False,
         'adamax': False,
         'exp_decay_rate_1':0.9,
         'exp_decay_rate_2':0.999,
-        'error_decrease_tolerance' : 0.0001,
+        'error_increase_tolerance' : 0.0001,
         'patience' : 10,
         'min_epochs' : 0,
         'metrics':[ErrorFunctions.mean_squared_error, ],
@@ -159,8 +165,10 @@ class ModelSelection:
         'verbose':False
         }
         self.inzialization_arg_names = ['topology', 'range_min', 'range_max', 'fan_in', 'random_state']
-        self.train_arg_names = ['batch_size', 'max_epochs', 'error_decrease_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'nesterov', 'metrics', 'collect_data', 
+        self.train_arg_names = ['batch_size', 'max_epochs', 'retraing_es_error', 'error_increase_tolerance', 'patience', 'min_epochs', 
+                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'nesterov', 
+                       'adamax', 'adamax_learning_rate', 'exp_decay_rate_1', 'exp_decay_rate_2',
+                       'metrics', 'collect_data', 
                         'collect_data_batch', 'verbose']
     
     def __restore_backup(self, hyperparameters:list = None):
@@ -208,8 +216,6 @@ class ModelSelection:
 
         configurations = [list(item) for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
         
-        print("Configurations total: ", configurations)
-        len1 = len(configurations)
         for c in configurations:
             for key in constraints:
                 constraint_func = constraints[key][0]
@@ -223,10 +229,7 @@ class ModelSelection:
 
         configurations.sort()
         configurations = list(k for k,_ in itertools.groupby(configurations))
-        len2 = len(configurations)
-        print("Configurations to be tested: ", configurations)
 
-        print("Configurations removed: ", len1, len2, len1-len2)
         return configurations, names
 
     def __merge_csv_file(self, results_file_name:str):
@@ -270,7 +273,7 @@ class ModelSelection:
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'mean_metrics', 'variance_metrics'])
+            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'mean_metrics', 'variance_metrics', 'mean_best_validation_training_error'])
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
             writer = csv.writer(back_up)
@@ -296,7 +299,7 @@ class ModelSelection:
             
             stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
 
-            writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics']]) 
+            writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
             back_up.flush()
 
         back_up.close()

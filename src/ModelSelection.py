@@ -148,7 +148,7 @@ class ModelSelection:
         'eta_tau' : 0.01,
         'batch_size' : 1,
         'max_epochs' : 100,
-        'retraing_es_error': np.inf,
+        'retraing_es_error': -1,
         'nesterov' : False,
         'adamax': False,
         'exp_decay_rate_1':0.9,

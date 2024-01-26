@@ -356,7 +356,7 @@ class NeuralNetwork:
               validation_set:np.ndarray = None, 
               batch_size:int = 1, 
               max_epochs:int = 1024, 
-              retraing_es_error = np.Inf,
+              retraing_es_error = -1,
               error_increase_tolerance:float = 0.0001, 
               patience: int = 8, 
               min_epochs: int = 0,
@@ -478,7 +478,7 @@ class NeuralNetwork:
             start_time = datetime.datetime.now()
 
         # start training cycle
-        while (epochs < max_epochs) and (exhausting_patience > 0) and (tr_err < retraing_es_error):
+        while (epochs < max_epochs) and (exhausting_patience > 0) and (tr_err > retraing_es_error):
             
             # batch
 

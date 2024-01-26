@@ -268,6 +268,8 @@ class ModelSelection:
 
         '''
         
+        print('start', hyperparameters, hyperparameters_name)
+        
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)

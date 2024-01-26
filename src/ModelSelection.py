@@ -3,6 +3,7 @@ from email import header
 from operator import index
 from matplotlib.pylab import f
 from pathlib import Path
+import random
 import numpy as np
 import math
 import multiprocessing
@@ -131,7 +132,7 @@ class ModelSelection:
             Raise(ValueError('Backup file missing'))
             
         self.partials_backup_prefix = 'tmp_'
-        self.partials_backup_path = '..\\data\\gs_data\\backup'
+        self.partials_backup_path = '../data/gs_data/backup'
         self.backup = cv_backup
         self.default_values =  {
         'range_min' : -0.75,
@@ -229,7 +230,7 @@ class ModelSelection:
         configurations.sort()
         configurations = list(k for k,_ in itertools.groupby(configurations))
 
-        return configurations, names
+        return random.shuffle(configurations), names
 
     def __merge_csv_file(self, results_file_name:str):
         '''

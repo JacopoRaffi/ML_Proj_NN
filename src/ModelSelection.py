@@ -296,10 +296,12 @@ class ModelSelection:
             args_train = [grid_val[key] for key in self.train_arg_names] 
             if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
             
+            try:
+                stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
+                writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
+            except Exception:
+                writer.writerow(list(configuration) + [None, None, None, None, None]) 
             
-            stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
-
-            writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
             back_up.flush()
 
         back_up.close()

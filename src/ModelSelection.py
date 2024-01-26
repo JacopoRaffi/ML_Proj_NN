@@ -268,7 +268,7 @@ class ModelSelection:
 
         '''
         
-        print('start', hyperparameters, hyperparameters_name)
+        print('start' + str(random.randint(0,1000)))
         
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
@@ -323,7 +323,7 @@ class ModelSelection:
         
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, constraints, recovery)
-
+        print('tot conf:', len(configurations))
         if n_proc == 1: # sequential execution
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return

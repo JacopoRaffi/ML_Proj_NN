@@ -16,8 +16,6 @@ import json
 import math
 
 
-# TODO: nesterov momentum
-
 # TODO: dalle slide (forse fatto)
 '''Note that often the bias w0
 is omitted from the regularizer (because
@@ -36,7 +34,6 @@ different lambda for on-line and batch (or any mini-batch)'''
 
 # TODO: per aumentare efficenza:
 # - fare derivate a mano?
-# - approssimare valori tipo learning rate per diminuire le cifre decimale ?!?! ha senso?
 
 
 
@@ -185,8 +182,7 @@ class NeuralNetwork:
         
         # All Neurons are initialised without synapses (successors/predecessors dependencies)
         for node in topology:
-            unit_index = int(node) # TODO qua se i neuroni sono lettere scoppia? se si basta cambiarlo in modo che dia lui un numero ad ogni neurone e via
-            # TODO non solo, devono partire da 0 ed essere gli indici dell'array... assunzioni un po traballanti...
+            unit_index = int(node)
             unit_type = topology[node][0]
             unit_activation_function = topology[node][1]
             unit_activation_function_args = [np.float64(a) for a in topology[node][2]]

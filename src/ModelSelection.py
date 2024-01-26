@@ -20,9 +20,6 @@ from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
 
 
-#TODO (opzionale) ottimizzare
-
-
 class ModelSelection:
     '''
     Implementation of the model selection algorithm

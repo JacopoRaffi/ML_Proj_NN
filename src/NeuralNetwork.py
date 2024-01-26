@@ -400,9 +400,9 @@ class NeuralNetwork:
         epochs = 0
         exhausting_patience = patience
         last_error_increase_percentage = 0
-        last_error = 0
-        new_error = 0
-        tr_err = 0
+        last_error = np.inf
+        new_error = np.inf
+        tr_err = np.inf
         training_set_length = len(training_set)
         batch_index = 0
         if batch_size > training_set_length: batch_size = training_set_length
@@ -466,8 +466,7 @@ class NeuralNetwork:
             start_time = datetime.datetime.now()
 
         # start training cycle
-        while (epochs < max_epochs) and (exhausting_patience > 0) and (tr_err > retraing_es_error):
-            
+        while (epochs < max_epochs) and (exhausting_patience > 0) and (last_error > retraing_es_error):
             # batch
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
@@ -503,7 +502,7 @@ class NeuralNetwork:
 
                 if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                     new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
-                    if last_error != 0 and new_error > last_error:
+                    if new_error > last_error:
                         last_error_increase_percentage = last_error - new_error/last_error    
                     else:
                         last_error_increase_percentage = 0
@@ -520,7 +519,6 @@ class NeuralNetwork:
 
                     if verbose: metrics_to_print = ''
                     for mes in metrics:
-                        
                         tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                         stats['training_' + mes.__name__].append(tr_err)
                         if not validation_set is None:
@@ -534,7 +532,8 @@ class NeuralNetwork:
                     if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
                     # take training time for the batch
                     start_time = datetime.datetime.now()
-                    
+        
+              
         # if nesterov is exploited, the weight needs to be modified for the final use
         for neuron in self.neurons[self.input_size:]:
             neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
@@ -553,53 +552,3 @@ class NeuralNetwork:
         '''
         
         self.__init_weights()
-        
-    
-        
-        
-if __name__ == '__main__':
-    def create_dataset(n_items, n_input, input_range, output_functions, seed):
-        random.seed(seed)
-
-        n_output = len(output_functions)
-        x = np.ndarray((n_items, n_input + n_output))
-
-        for i in range(n_items):
-            for l in range(n_input):
-                x[i,l] = random.randrange(input_range[0], input_range[1], input_range[2])
-
-            for l, fun in enumerate(output_functions):
-                
-                x[i, n_input + l] = fun(x[i][:n_input])
-                #print(x[i][:n_input], fun(x[i][:n_input]), x[i, l])
-
-        return pd.DataFrame(x, columns = ['input_' + str(i + 1) for i in range(n_input)] + ['output_' + str(i + 1) for i in range(n_output)])
-
-
-    topology_2 = {'0': ['input', 'None', [], ['2', '3']],
-                '1': ['input', 'None', [], ['2', '3']], 
-                '2': ['output', 'identity', ['0', '1'], []],
-                '3': ['output', 'identity', ['0', '1'], []]}
-
-    RANDOM_STATE = 12345
-    NN = NeuralNetwork(topology_2, -0.75, 0.75, True, RANDOM_STATE)
-
-    tr_1_input = 2
-    tr_1_output = 2
-    len_dataset = 500
-    tr_1 = create_dataset(len_dataset, tr_1_input, [0, 100, 1], [lambda x : 2*x[0] + x[1] + 4, lambda x : -2*x[0] + x[1] + 1], RANDOM_STATE)
-
-    training_set = tr_1.values
-
-    batch_size = 20
-    max_epochs = 250
-    error_increase_tolerance = 0.0001
-    patience = 20
-
-    learning_rate = 0.0001/batch_size
-    lambda_tikhonov = 0
-    alpha_momentum = 0
-
-    stats = NN.train_2(training_set, batch_size, max_epochs, error_increase_tolerance, patience, 
-                    learning_rate, lambda_tikhonov, alpha_momentum)
-    predictions = NN.predict_array(training_set)

@@ -229,8 +229,10 @@ class ModelSelection:
 
         configurations.sort()
         configurations = list(k for k,_ in itertools.groupby(configurations))
-
-        return random.shuffle(configurations), names
+        
+        random.shuffle(configurations)
+        
+        return configurations, names
 
     def __merge_csv_file(self, results_file_name:str):
         '''
@@ -327,7 +329,7 @@ class ModelSelection:
         if n_proc == 1: # sequential execution
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return
-
+        
         remainder = len(configurations) % n_proc
         single_conf_size = int(len(configurations) / n_proc)
         start = end = 0

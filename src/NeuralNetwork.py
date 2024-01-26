@@ -336,20 +336,6 @@ class NeuralNetwork:
         # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
         for neuron in reversed(self.neurons[self.input_size:-self.output_size]):
             neuron.backward()
-        
-        # The error is calculated in the ouput units and propagated backwards
-        #target_index = len(target) - 1
-        #while nn_neuron_index >= self.n_neurons-self.output_size:
-            #print("Back Index:", self.neurons[nn_neuron_index].index)
-            #self.neurons[nn_neuron_index].backward(target[target_index])
-            #target_index -= 1
-            #nn_neuron_index -= 1
-        
-        # The hidden units will now calculate their errors based on the signal propagated by their successors in the nn
-        #while nn_neuron_index >= self.input_size:
-            #print("Back Index:", self.neurons[nn_neuron_index].index)
-            #self.neurons[nn_neuron_index].backward()
-            #nn_neuron_index -= 1
                 
     def train(self, 
               training_set:np.ndarray, 
@@ -548,7 +534,7 @@ class NeuralNetwork:
                     if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
                     # take training time for the batch
                     start_time = datetime.datetime.now()
-
+                    
         # if nesterov is exploited, the weight needs to be modified for the final use
         for neuron in self.neurons[self.input_size:]:
             neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 

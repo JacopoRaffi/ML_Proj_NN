@@ -247,7 +247,7 @@ class HiddenNeuron(ABCNeuron):
         self.exponentially_weighted_infinity_norm = 0
         
         if fan_in:
-            self.w = self.w * 2/(self.n_predecessors + 1) # TODO magari va tolto il +1 perchè il bias non è da contare
+            self.w = self.w * 2/(self.n_predecessors + 1)
         
     def forward(self):
         '''
@@ -324,18 +324,6 @@ class HiddenNeuron(ABCNeuron):
         self.successors.extend(neurons)
         for successor in neurons:
             successor.add_predecessor(self)
-
-
-    # TODO: sta funzione se viene usata credo crei problemi con un utilizzo contemporaneo anche della precedente, per ora la togliamo, se serve vebremo
-    # TODO: eliminare?
-    #def extend_predecessors(self, neurons:list):
-        '''
-        Extends the list of the Neuron's predecessors
-        
-        :param neurons: the list of Neurons to add to the list of predecessors
-        :return: -
-        '''
-        #self.predecessors.extend(neurons)
 
     def add_predecessor(self, neuron):
         '''

@@ -19,10 +19,6 @@ from MyProcess import *
 from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
 
-
-#TODO (opzionale) ottimizzare
-
-
 class ModelSelection:
     '''
     Implementation of the model selection algorithm
@@ -297,10 +293,10 @@ class ModelSelection:
             grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
             grid_val['eta_tau'] = grid_val['eta_tau']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
-            if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?
+            if verbose: print("Training a new model : ", args_train)
             
             try:
-                stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train) # TODO: metrics!?!?!?!?
+                stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
             except Exception:
                 writer.writerow(list(configuration) + [None, None, None, None, None]) 

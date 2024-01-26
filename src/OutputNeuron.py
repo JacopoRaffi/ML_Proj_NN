@@ -278,14 +278,3 @@ class OutputNeuron(ABCNeuron):
         return: -
         '''
         self.predecessors.append(neuron)
-
-
-    # TODO: eliminare?
-    #def extend_predecessors(self, neurons:list):
-        '''
-        Extends the list of the Neuron's predecessors
-        
-        :param neurons: the list of Neurons to add to the list of predecessors
-        :return: -
-        '''
-        #self.predecessors.extend(neurons)

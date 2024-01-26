@@ -483,12 +483,6 @@ class NeuralNetwork:
         while (epochs < max_epochs) and (exhausting_patience > 0) and (tr_err > retraing_es_error):
             
             # batch
-
-            '''
-            if nesterov: 
-                for neuron in self.neurons[self.input_size:]:
-                    neuron.add_nesterov_momentum(alpha_momentum)'''
-
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
                 self.__backpropagation(sample[self.input_size:])
@@ -509,8 +503,6 @@ class NeuralNetwork:
                 for unit in self.neurons[self.input_size:]:
                     stats['units_weights_batch'][unit.index].append(unit.w.copy())
 
-            #TODO: per implementare altri errori dobbiamo cambiare la back prop
-            #TODO: stiamo facendo il controllo sull'errore dell'iterazione prima, non good
             batch_index += batch_size
             if batch_index >= training_set_length:
                 if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
@@ -562,12 +554,18 @@ class NeuralNetwork:
             neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
             
         # final stats gathering
+        stats['epochs'] = epochs
         if collect_data:
-            stats['epochs'] = epochs
             stats['mean_epoch_train_time'] = stats['total_train_time']/stats['epochs']
         return stats
-        
+    
     def reset(self):
+        '''
+        Reset all the neurons in the Network
+        
+        return: -
+        '''
+        
         self.__init_weights()
         
     

@@ -81,7 +81,6 @@ class ModelSelection:
             
             new_stats = model.train(training_set, validation_set, *model_args)
             tr_errors[i] = new_stats['best_validation_training_error']
-
             if not stats: # first iteration
                 for key in model.input_stats:
                     stats[key] = new_stats[key]
@@ -292,6 +291,7 @@ class ModelSelection:
             nn = NeuralNetwork(*args_init)
             # train the model
             grid_val['learning_rate'] = grid_val['learning_rate'] / grid_val['batch_size']
+            grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
             grid_val['eta_tau'] = grid_val['eta_tau']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
             if verbose: print("Training a new model : ", args_train) # TODO: magari un contatore?

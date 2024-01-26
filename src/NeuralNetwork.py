@@ -64,6 +64,8 @@ class NeuralNetwork:
         'patience',
         'min_epochs',
         'learning_rate',
+        'lr_decay_tau',
+        'eta_tau',
         'lambda_tikhonov',
         'alpha_momentum',
         'nesterov',
@@ -88,7 +90,9 @@ class NeuralNetwork:
               'error_increase_tolerance', 
               'patience', 
               'min_epochs',
-              'learning_rate', 
+              'learning_rate',
+              'lr_decay_tau',
+              'eta_tau', 
               'lambda_tikhonov', 
               'alpha_momentum', 
               
@@ -433,6 +437,8 @@ class NeuralNetwork:
             'patience':patience,
             'min_epochs':min_epochs,
             'learning_rate':learning_rate,
+            'lr_decay_tau':lr_decay_tau,
+            'eta_tau':eta_tau,
             'lambda_tikhonov':lambda_tikhonov,
             'alpha_momentum':alpha_momentum,
             

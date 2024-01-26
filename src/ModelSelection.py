@@ -270,7 +270,7 @@ class ModelSelection:
 
         return: -
 
-        '''   
+        '''
         
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 

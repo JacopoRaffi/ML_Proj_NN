@@ -1,0 +1,1 @@
+alpha_momentum,batch_size,collect_data,error_increase_tolerance,lambda_tikhonov,learning_rate,lr_decay_tau,max_epochs,metrics,min_epochs,patience,topology,stats,metrics_names,mean_metrics,variance_metrics,mean_best_validation_training_error

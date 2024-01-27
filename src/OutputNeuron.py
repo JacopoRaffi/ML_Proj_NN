@@ -144,17 +144,20 @@ class OutputNeuron(ABCNeuron):
         self.steps += 1
         
         # our gradient is already multiplyed by -1 !!!!
-        self.partial_weight_update = self.partial_weight_update * -1
+        gradient = self.partial_weight_update * -1
         
         # Update biased first moment estimate
-        self.old_weight_update = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * self.partial_weight_update
+        momentum = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * gradient
+        
         # Update the exponentially weighted infinity norm
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
-                                                        np.linalg.norm(self.partial_weight_update, ord=np.inf))
+                                                        np.linalg.norm(gradient, ord=np.inf))
         
-        # Update parameters 
-        dummy_1 = self.old_weight_update/self.exponentially_weighted_infinity_norm
+        # Update parameters
+    
+        dummy_1 = momentum/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
+
         weight_update = -(learning_rate/dummy_2)*dummy_1
         
         # here we add the tikhonov regularization
@@ -167,7 +170,6 @@ class OutputNeuron(ABCNeuron):
         # reset of every accumulative variable used
         self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
-        self.partial_successors_weighted_errors = 0.0
         
         if sum(np.isinf(self.w)): raise Exception('Execution Failed')
         
@@ -192,9 +194,7 @@ class OutputNeuron(ABCNeuron):
         
         if fan_in:
             self.w = self.w * 2/(self.n_predecessors + 1)
-            
-        
-        
+                     
     def forward(self):
         '''
         Calculates the Neuron's output on the inputs incoming from the other units
@@ -211,7 +211,7 @@ class OutputNeuron(ABCNeuron):
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
         
-        return self.last_predict
+        return self.last_predict.copy()
     
     def backward(self, target:float):
         '''

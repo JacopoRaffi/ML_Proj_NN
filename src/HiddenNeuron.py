@@ -155,20 +155,25 @@ class HiddenNeuron(ABCNeuron):
         
         return: -
         '''
+        
         self.steps += 1
         
-        self.partial_weight_update = self.partial_weight_update * -1
+        # our gradient is already multiplyed by -1 !!!!
+        gradient = self.partial_weight_update * -1
+        
         # Update biased first moment estimate
-        self.old_weight_update = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * self.partial_weight_update
+        momentum = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * gradient
+        
         # Update the exponentially weighted infinity norm
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
-                                                        np.linalg.norm(self.partial_weight_update, ord=np.inf))
+                                                        np.linalg.norm(gradient, ord=np.inf))
         
         # Update parameters 
-        dummy_1 = self.old_weight_update/self.exponentially_weighted_infinity_norm
+       
+        dummy_1 = momentum/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
         weight_update = -(learning_rate/dummy_2)*dummy_1
-        # our gradient is already multiplyed by -1 !!!!
+        
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
@@ -257,7 +262,6 @@ class HiddenNeuron(ABCNeuron):
             if p.type != "input":
                 p.accumulate_weighted_error(delta_error, self.w[index + 1]) # bias
 
-        
         self.partial_weight_update += (delta_error * predecessors_outputs)# accumulating weight updates for the batch version
 
     def add_successor(self, neuron):

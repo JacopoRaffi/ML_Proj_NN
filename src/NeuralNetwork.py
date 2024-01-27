@@ -507,7 +507,7 @@ class NeuralNetwork:
                         last_error_increase_percentage = (new_error - last_error)/last_error    
                     else:
                         last_error_increase_percentage = 0
-                        stats['best_validation_training_error'] = min(stats['best_validation_training_error'], tr_err)
+                        stats['best_validation_training_error'] = min(stats['best_validation_training_error'], training_err)
                     last_error = new_error
 
                 # stats for every epoch

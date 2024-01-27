@@ -466,7 +466,7 @@ class NeuralNetwork:
             start_time = datetime.datetime.now()
 
         # start training cycle
-        while (epochs < max_epochs) and (exhausting_patience > 0) and (last_error > retraing_es_error):
+        while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
             # batch
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                 self.predict(sample[:self.input_size])
@@ -498,12 +498,12 @@ class NeuralNetwork:
                 epochs += 1
                 batch_index = batch_index%training_set_length
 
-                tr_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
 
                 if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                     new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                     if new_error > last_error:
-                        last_error_increase_percentage = last_error - new_error/last_error    
+                        last_error_increase_percentage = (new_error - last_error)/last_error    
                     else:
                         last_error_increase_percentage = 0
                         stats['best_validation_training_error'] = min(stats['best_validation_training_error'], tr_err)

@@ -289,7 +289,7 @@ class NeuralNetwork:
         return: the description of the internal rapresentation
         '''
         ret = ''
-        for i in self.neurons[self.input_size:self.output_size]:
+        for i in self.neurons[self.input_size:-self.output_size]:
             ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.n_predecessors) + '/' + str(i.n_successors) + '\n'
         for i in self.neurons[-self.output_size:]:
             ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.n_predecessors) + '\n'
@@ -471,10 +471,9 @@ class NeuralNetwork:
         try:
             # start training cycle
             while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
-                print(self)
+                #print(self)
                 # batch
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
-                    print(sample)
                     self.predict(sample[:self.input_size])
                     self.__backpropagation(sample[self.input_size:])
 

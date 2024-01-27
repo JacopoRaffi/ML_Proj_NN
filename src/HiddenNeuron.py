@@ -185,6 +185,8 @@ class HiddenNeuron(ABCNeuron):
         self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
+        
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
      
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
                               lambda_tikhonov:float = 0.0):
@@ -223,7 +225,7 @@ class HiddenNeuron(ABCNeuron):
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
         
-        # if self.index == 20: print(weight_update)
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
         '''

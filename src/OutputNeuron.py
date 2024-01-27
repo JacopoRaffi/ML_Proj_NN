@@ -170,6 +170,8 @@ class OutputNeuron(ABCNeuron):
         self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
+        
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
                               lambda_tikhonov:float = 0.0):
         '''
@@ -188,12 +190,15 @@ class OutputNeuron(ABCNeuron):
         # Update the exponentially weighted infinity norm
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
                                                         np.linalg.norm(-1 * self.partial_weight_update, ord=np.inf))
+        # our gradient is already multiplyed by -1 !!!!
+        
         
         # Update parameters 
         dummy_1 = self.old_weight_update/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
         weight_update = (learning_rate/dummy_2)*dummy_1
         # our gradient is already multiplyed by -1 !!!!
+        
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
@@ -206,6 +211,8 @@ class OutputNeuron(ABCNeuron):
         self.old_weight_update = weight_update.copy()
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
+        
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
         '''
@@ -227,7 +234,9 @@ class OutputNeuron(ABCNeuron):
         self.exponentially_weighted_infinity_norm = 0
         
         if fan_in:
-            self.w = self.w * 2/(self.n_predecessors + 1) # bias
+            self.w = self.w * 2/(self.n_predecessors + 1)
+            
+        
         
     def forward(self):
         '''

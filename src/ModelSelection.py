@@ -268,8 +268,6 @@ class ModelSelection:
 
         '''
         
-        print('start' + str(random.randint(0,1000)))
-        
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
@@ -298,6 +296,7 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
+                print('start' + str(random.randint(0,1000)))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
             except Exception:

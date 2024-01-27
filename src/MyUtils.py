@@ -14,7 +14,7 @@ from ActivationFunctions import *
 from NeuralNetwork import *
 
 
-RANDOM_STATE = 68
+RANDOM_STATE = 69
 
 # -- PLOT --
 def multy_plot(datas, labels, title=None, scale='linear', ax=None):

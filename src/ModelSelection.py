@@ -296,6 +296,7 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
+                print(os.getpid(), 'started new kfold')
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
             except Exception:
@@ -345,7 +346,8 @@ class ModelSelection:
             
             j = i+1
             process = multiprocessing.Process(target=self.__process_task_trainKF, args=(data_set, configurations[start:end],
-                                                                                 names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')))
+                                                                                 names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')),
+                                              daemon=True)
             proc_pool.append(process)
             process.start()
             

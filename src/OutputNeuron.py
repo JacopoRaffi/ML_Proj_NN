@@ -64,7 +64,7 @@ class OutputNeuron(ABCNeuron):
         self.partial_weight_update = np.array([]) # the partial sum (on the minibatch) that will compose the DeltaW weight update value
         self.old_weight_update = np.array([]) #the old weight update value DeltaW
 
-        self.exponentially_weighted_infinity_norm = 0.0 # variable used in for the adamax weight update
+        self.exponentially_weighted_infinity_norm = 1 # variable used in for the adamax weight update
         
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
@@ -154,7 +154,7 @@ class OutputNeuron(ABCNeuron):
                                                         np.linalg.norm(gradient, ord=np.inf))
         
         # Update parameters
-    
+            
         dummy_1 = momentum/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
 
@@ -162,7 +162,7 @@ class OutputNeuron(ABCNeuron):
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
-        tmp[0] = 0 # avoid to regularize the bias
+        #tmp[0] = 0 # avoid to regularize the bias
         weight_update = weight_update - (lambda_tikhonov * tmp)
         
         self.w += weight_update
@@ -190,7 +190,7 @@ class OutputNeuron(ABCNeuron):
         self.partial_weight_update = np.zeros(self.n_predecessors + 1) # bias
         
         self.steps = 0
-        self.exponentially_weighted_infinity_norm = 0
+        self.exponentially_weighted_infinity_norm = 1
         
         if fan_in:
             self.w = self.w * 2/(self.n_predecessors + 1)

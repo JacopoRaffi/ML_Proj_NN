@@ -37,9 +37,9 @@ class InputNeuron(ABCNeuron):
         
         self.last_predict = 0.0 # output of the neuron (instance variable exploited for predictions out of training)
         # just to semplify stats collection
-        self.delta_error = 0 
-        self.old_weight_update = 0
-        self.w = np.array([0])
+        #self.delta_error = 0 
+        #self.old_weight_update = 0
+        #self.w = np.array([0])
         
     def forward(self, input:float):
         '''

@@ -198,9 +198,10 @@ class HiddenNeuron(ABCNeuron):
 
         self.n_predecessors = len(self.predecessors)
         self.n_successors = len(self.successors)
-        self.w = random_generator.uniform(rand_range_min, rand_range_max, self.n_predecessors + 1) # the +1 is to count the bias
         self.old_weight_update = np.zeros(self.n_predecessors + 1) # bias
         self.partial_weight_update = np.zeros(self.n_predecessors + 1) # bias
+        
+        
         
         self.steps = 0
         self.exponentially_weighted_infinity_norm = 0

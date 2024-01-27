@@ -270,9 +270,11 @@ class ModelSelection:
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
             writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'mean_metrics', 'variance_metrics', 'mean_best_validation_training_error'])
+            back_up.flush()
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
             writer = csv.writer(back_up)
+            
 
         # for every configuration create a new clean model and train it
         for configuration in hyperparameters:

@@ -289,8 +289,10 @@ class NeuralNetwork:
         return: the description of the internal rapresentation
         '''
         ret = ''
-        for i in self.neurons:
-            ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.input)
+        for i in self.neurons[self.input_size:self.output_size]:
+            ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.n_predecessors) + '/' + str(i.n_successors) + '\n'
+        for i in self.neurons[-self.output_size:]:
+            ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.n_predecessors) + '\n'
         return ret
 
     def predict(self, input:np.array):

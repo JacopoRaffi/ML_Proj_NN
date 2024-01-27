@@ -466,7 +466,8 @@ class NeuralNetwork:
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
 
-        # start training cycle
+
+            # start training cycle
         while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
             # batch
             for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
@@ -533,8 +534,7 @@ class NeuralNetwork:
                     if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
                     # take training time for the batch
                     start_time = datetime.datetime.now()
-        
-              
+
         # if nesterov is exploited, the weight needs to be modified for the final use
         for neuron in self.neurons[self.input_size:]:
             neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
@@ -553,3 +553,77 @@ class NeuralNetwork:
         '''
         
         self.__init_weights()
+        
+        
+'''
+print('caia')
+import matplotlib.pyplot as plt
+import numpy as np
+import sys
+import os
+import pandas as pd
+import plotly.express as px
+from sklearn.preprocessing import MinMaxScaler
+
+sys.path.append(os.path.abspath('../src/'))
+from ActivationFunctions import *
+from ModelSelection import *
+from NeuralNetwork import *
+from MyUtils import *
+
+tr_df = pd.read_csv('../data/monks_csv/monks_tr_1.csv', index_col=0)
+len_training = len(tr_df)
+val_df = pd.read_csv('../data/monks_csv/monks_ts_1.csv', index_col=0) # test in realtà ma va be
+len_validation = len(val_df)
+len_dataset = len_training + len_validation
+
+def OHE(df):
+    OHE = pd.get_dummies(df, columns=['input_'+str(i) for i in range(1, 7)])
+    OHE = OHE.set_axis(['output_1'] + ['input_' + str(i) for i in range(1, len(OHE.columns))], axis=1)
+    cols = OHE.columns.tolist()
+    cols = cols[1:] + cols[:1]
+    OHE = OHE[cols]
+    return OHE
+
+tr_df_OHE = OHE(tr_df)
+val_df_OHE = OHE(val_df)
+
+TR_INPUT = len(tr_df_OHE.columns) - 1
+TR_OUTPUT = 1
+hidden_len = 4
+topology = create_stratified_topology([TR_INPUT,hidden_len,TR_OUTPUT], 
+                                    [[None,[]]]*TR_INPUT + [['sigmoid', [1]]]*hidden_len + [['sigmoid', [1]]])
+NeuralNetwork.display_topology(topology)
+
+training_set = tr_df_OHE.values
+validation_set = val_df_OHE.values
+
+
+training_set = tr_df_OHE.values
+validation_set = val_df_OHE.values
+metrics = [ErrorFunctions.mean_squared_error, ErrorFunctions.mean_euclidean_error]
+
+NN = NeuralNetwork(topology, -0.75, 0.75, True, 7)
+stats = NN.train(training_set, validation_set, 
+                batch_size = int(len(training_set)/15), 
+                max_epochs = 1000, 
+                error_increase_tolerance = np.inf,
+                patience = 10, 
+                min_epochs = 50, 
+                lambda_tikhonov = 0.00001, 
+                metrics = metrics, 
+                
+                learning_rate=0.2/int(len(training_set)/15), # divided by batch size
+                alpha_momentum=0.6,
+                lr_decay_tau=0,
+                eta_tau=0, # 1% of lr_decay_tau
+                
+                adamax = True,
+                adamax_learning_rate = 0.2/int(len(training_set)/15), # divided by batch size
+                exp_decay_rates_1 = 0.5,
+                exp_decay_rates_2 = 0.7,
+                
+                collect_data=True,
+                collect_data_batch=False,
+                verbose=True,
+                )'''

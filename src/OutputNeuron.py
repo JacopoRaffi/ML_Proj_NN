@@ -131,7 +131,7 @@ class OutputNeuron(ABCNeuron):
         if sum(np.isinf(self.w)): raise Exception('Execution Failed')
         
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
-                              lambda_tikhonov:float = 0.0):
+                              lambda_tikhonov:float = 0.00001):
         '''
         Updates the weight vector (w) of the Neuron using Adamax Algorithm
         
@@ -143,7 +143,9 @@ class OutputNeuron(ABCNeuron):
         '''
         self.steps += 1
         
+        # our gradient is already multiplyed by -1 !!!!
         self.partial_weight_update = self.partial_weight_update * -1
+        
         # Update biased first moment estimate
         self.old_weight_update = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * self.partial_weight_update
         # Update the exponentially weighted infinity norm
@@ -154,8 +156,6 @@ class OutputNeuron(ABCNeuron):
         dummy_1 = self.old_weight_update/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
         weight_update = -(learning_rate/dummy_2)*dummy_1
-        # our gradient is already multiplyed by -1 !!!!
-        
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)

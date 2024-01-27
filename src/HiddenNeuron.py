@@ -170,7 +170,6 @@ class HiddenNeuron(ABCNeuron):
         weight_update = -(learning_rate/dummy_2)*dummy_1
         # our gradient is already multiplyed by -1 !!!!
         
-        
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
         tmp[0] = 0 # avoid to regularize the bias

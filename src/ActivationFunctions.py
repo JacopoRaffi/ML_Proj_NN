@@ -17,7 +17,7 @@ def derivative(fun:callable, input:float, *args):
     if fun == ReLU:
         return 1 if input > 0 else 0
     else:
-        x = numpy.array([input-0.00001, input, input+0.00001])
+        x = numpy.array([input-0.001, input, input+0.001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
 
     return numpy.gradient(y, x, edge_order=2)[1]
@@ -42,7 +42,9 @@ def sigmoid(input, slope, *args):
     
     return: the results of the sigmoid function
     '''
-    return 1/(1 + math.exp(-(input*slope)))
+    ret = 1/(1 + math.exp(-(input*slope)))
+
+    return ret
 
 def tanh(input, slope, *args):
     '''

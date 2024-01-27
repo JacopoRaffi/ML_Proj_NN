@@ -471,7 +471,6 @@ class NeuralNetwork:
         try:
             # start training cycle
             while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
-                # print(self)
                 # batch
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                     self.predict(sample[:self.input_size])
@@ -504,7 +503,6 @@ class NeuralNetwork:
                     batch_index = batch_index%training_set_length
 
                     training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
-                    print("tr_err", training_err)
                     if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:

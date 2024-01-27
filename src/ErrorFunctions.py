@@ -19,7 +19,7 @@ def mean_euclidean_error(outputs:numpy.ndarray, targets:numpy.ndarray):
 
     return sum/len(outputs)
 
-def mean_squared_error(outputs:numpy.ndarray, targets:numpy.ndarray, root:bool = False):
+def mean_squared_error(outputs:numpy.ndarray, targets:numpy.ndarray):
     '''
     Calculates the Mean Squared Error for a given learning set of patterns
     
@@ -31,9 +31,9 @@ def mean_squared_error(outputs:numpy.ndarray, targets:numpy.ndarray, root:bool =
     '''
 
     error = numpy.mean(numpy.sum((targets-outputs)**2, axis=1))
-    
-    if root:
-        error = math.sqrt(error)
+    if numpy.isnan(error):
+        print("targets:", targets)
+        print("outs:", outputs)
 
     return error
 

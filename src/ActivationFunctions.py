@@ -15,7 +15,12 @@ def derivative(fun:callable, input:float, *args):
     '''
 
     if fun == ReLU:
-        return 1 if input > 0 else 0
+        if input > 0: return 1
+        else: return 0
+        
+    elif fun == identity:
+        return 1
+
     else:
         x = numpy.array([input-0.001, input, input+0.001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
@@ -93,4 +98,4 @@ def ReLU(input, *args):
     return: the results of the sigmoid function
     '''
 
-    return max(0, input)
+    return max(0.0, input)

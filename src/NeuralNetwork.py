@@ -403,7 +403,7 @@ class NeuralNetwork:
         epochs = 0
         exhausting_patience = patience
         last_error_increase_percentage = -1
-        training_err = 0
+        training_err = np.inf
         last_error = np.inf
         new_error = np.inf
         tr_err = np.inf
@@ -504,7 +504,7 @@ class NeuralNetwork:
                     batch_index = batch_index%training_set_length
 
                     training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
-
+                    print("tr_err", training_err)
                     if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:

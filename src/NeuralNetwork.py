@@ -400,7 +400,7 @@ class NeuralNetwork:
         epochs = 0
         exhausting_patience = patience
         last_error_increase_percentage = -1
-        training_err = -2
+        training_err = 0
         last_error = np.inf
         new_error = np.inf
         tr_err = np.inf

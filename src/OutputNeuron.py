@@ -80,48 +80,6 @@ class OutputNeuron(ABCNeuron):
         '''
         
         self.w = self.w + alpha_momentum*self.old_weight_update
-    
-    def old_update_weights(self, learning_rate:float = 1, lr_decay_tau:int = 0, eta_tau:float = 0.0, 
-                       lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
-        '''
-        Updates the weight vector (w) of the Neuron
-        
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
-        param eta_tau: Eta hyperparameter at iteration tau if the learning rate decay procedure is adopted
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
-
-        return: -
-        '''
-        # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
-        # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
-        self.steps += 1
-        eta = learning_rate
-        if self.steps < lr_decay_tau:
-            alpha = self.steps/lr_decay_tau
-            eta = learning_rate * (1 - alpha) + alpha * eta_tau
-        elif lr_decay_tau > 0:
-            eta = eta_tau
-            
-        # here is the final gradient multiplied by the learning rate
-        weight_update = (eta * self.partial_weight_update)
-        
-        # here we add the tikhonov regularization
-        tmp = np.copy(self.w)
-        tmp[0] = 0 # avoid to regularize the bias
-        weight_update = weight_update - (lambda_tikhonov * tmp)
-        
-        # here we add the momentum influence on the final weight update
-        weight_update = weight_update + (self.old_weight_update * alpha_momentum)
-
-        # if nesterov momentum is exploited, we must apply the weight update on the original weight vector
-        self.w -= alpha_momentum * self.old_weight_update * nesterov_momentum
-        
-        self.w += weight_update
-        # reset of every accumulative variable used
-        self.old_weight_update = weight_update.copy()
-        self.partial_weight_update = np.zeros(self.n_predecessors + 1)
 
     def update_weights(self, learning_rate:float = 0.01, lr_decay_tau:int = 0, 
                        eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
@@ -185,18 +143,17 @@ class OutputNeuron(ABCNeuron):
         '''
         self.steps += 1
         
+        self.partial_weight_update = self.partial_weight_update * -1
         # Update biased first moment estimate
         self.old_weight_update = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * self.partial_weight_update
         # Update the exponentially weighted infinity norm
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
-                                                        np.linalg.norm(-1 * self.partial_weight_update, ord=np.inf))
-        # our gradient is already multiplyed by -1 !!!!
-        
+                                                        np.linalg.norm(self.partial_weight_update, ord=np.inf))
         
         # Update parameters 
         dummy_1 = self.old_weight_update/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
-        weight_update = (learning_rate/dummy_2)*dummy_1
+        weight_update = -(learning_rate/dummy_2)*dummy_1
         # our gradient is already multiplyed by -1 !!!!
         
         

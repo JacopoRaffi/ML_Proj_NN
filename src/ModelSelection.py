@@ -63,11 +63,9 @@ class ModelSelection:
         stats = {}
         split_index = 0
         
-        
-        #training_set = np.append(data_set[:split_index], data_set[split_index + split_size:], axis=0)
-        #validation_set = data_set[split_index : split_index + split_size]
-        
+        # random shuffling the dataset to prevent biased dataset configuration
         np.random.shuffle(data_set)
+        
         # At each iteration only one of the K subsets of data is used as the validation set, 
         # while all others are used for training the model validated on it.
         for i in range(k):
@@ -345,8 +343,12 @@ class ModelSelection:
                 end += single_conf_size
             
             j = i+1
-            process = multiprocessing.Process(target=self.__process_task_trainKF, args=(data_set, configurations[start:end],
-                                                                                 names, k_folds, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')),
+            process = multiprocessing.Process(target=self.__process_task_trainKF, 
+                                              args=(data_set, 
+                                                    configurations[start:end],
+                                                    names, 
+                                                    k_folds, 
+                                                    os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')),
                                               daemon=True)
             proc_pool.append(process)
             process.start()

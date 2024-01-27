@@ -76,7 +76,7 @@ class HiddenNeuron(ABCNeuron):
         self.partial_successors_weighted_errors = 0.0 # the partial sum of successors' errors values weighted by the weight of the link bethween the two units
         
         
-        self.exponentially_weighted_infinity_norm = 0.0 # variable used in for the adamax weight update
+        self.exponentially_weighted_infinity_norm = 1 # variable used in for the adamax weight update
         
         
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
@@ -168,8 +168,7 @@ class HiddenNeuron(ABCNeuron):
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
                                                         np.linalg.norm(gradient, ord=np.inf))
         
-        # Update parameters 
-       
+        # Update parameters
         dummy_1 = momentum/self.exponentially_weighted_infinity_norm
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
         weight_update = -(learning_rate/dummy_2)*dummy_1
@@ -177,7 +176,7 @@ class HiddenNeuron(ABCNeuron):
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
-        tmp[0] = 0 # avoid to regularize the bias
+        #tmp[0] = 0 # avoid to regularize the bias
         weight_update = weight_update - (lambda_tikhonov * tmp)
         
         self.w += weight_update
@@ -209,7 +208,7 @@ class HiddenNeuron(ABCNeuron):
         self.w = random_generator.uniform(rand_range_min, rand_range_max, self.n_predecessors + 1) # bias
         
         self.steps = 0
-        self.exponentially_weighted_infinity_norm = 0
+        self.exponentially_weighted_infinity_norm = 1
         
         if fan_in:
             self.w = self.w * 2/(self.n_predecessors + 1)

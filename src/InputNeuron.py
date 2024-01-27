@@ -39,7 +39,7 @@ class InputNeuron(ABCNeuron):
         # just to semplify stats collection
         #self.delta_error = 0 
         #self.old_weight_update = 0
-        #self.w = np.array([0])
+        self.w = np.array([0])
         
     def forward(self, input:float):
         '''

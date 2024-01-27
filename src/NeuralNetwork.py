@@ -290,7 +290,7 @@ class NeuralNetwork:
         '''
         ret = ''
         for i in self.neurons:
-            ret += 'id: '+ str(i.index) +  'w: ' + str(i.w) + '\n'
+            ret += 'id: '+ str(i.index) +  ' w: ' + str(i.w) + ' ' + ' i/o: ' + str(i.input)
         return ret
 
     def predict(self, input:np.array):
@@ -467,11 +467,12 @@ class NeuralNetwork:
             start_time = datetime.datetime.now()
 
         try:
-                # start training cycle
+            # start training cycle
             while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
                 print(self)
                 # batch
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
+                    print(sample)
                     self.predict(sample[:self.input_size])
                     self.__backpropagation(sample[self.input_size:])
 

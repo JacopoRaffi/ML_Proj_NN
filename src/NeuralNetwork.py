@@ -134,6 +134,9 @@ class NeuralNetwork:
         # Mostra il grafo
         plt.show()
 
+    def toJSON(self):
+        for neuron in self.ne
+    
     def __get_function_from_string(self, name:str):
         '''
         Map the function name to the corresponding callable variable
@@ -265,6 +268,8 @@ class NeuralNetwork:
 
         self.input_size = 0
         self.output_size = 0
+        
+        self.topology = topology
 
         self.random_generator = np.random.default_rng(random_state)
         self.rand_range_min = rand_range_min

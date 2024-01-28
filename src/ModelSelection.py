@@ -244,7 +244,7 @@ class ModelSelection:
         print("Already done: ", len(done_configurations))
         print('tot conf:', len(configurations))
         configurations = list(filter(lambda x: x not in done_configurations, configurations))
-        print('removed already done conf:', len(configurations))
+        print('remaining conf:', len(configurations))
         
         random.shuffle(configurations)
         
@@ -361,7 +361,7 @@ class ModelSelection:
         
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, constraints, recovery)
-        print('tot conf:', len(configurations))
+        print('tot conf to do:', len(configurations))
         if n_proc == 1: # sequential execution
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return

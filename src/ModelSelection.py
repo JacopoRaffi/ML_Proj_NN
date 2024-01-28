@@ -326,7 +326,7 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
-                time.sleep(1)
+                
                 print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(configuration))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
@@ -377,6 +377,7 @@ class ModelSelection:
             os.makedirs(partial_data_dir)
 
         for i in range(n_proc): # distribute equally the workload among the processes
+            time.sleep(1)
             start = end
             if remainder > 0:
                 end += single_conf_size + 1

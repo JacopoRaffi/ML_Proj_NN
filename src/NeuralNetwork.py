@@ -105,7 +105,6 @@ class NeuralNetwork:
               'collect_data_batch', 
               'verbose']
 
-
     def display_topology(topology):
         '''
         Function to vsualize a simple topology, if there are more then one hidden layer, the visualization is bad...
@@ -135,13 +134,6 @@ class NeuralNetwork:
         # Mostra il grafo
         plt.show()
 
-    def toJSON(self):
-        str_js = ''
-        attributes = vars(self)
-        for attr in attributes:
-            str_js += json.dumps(attributes[attr])
-        return str_js
-    
     def __get_function_from_string(self, name:str):
         '''
         Map the function name to the corresponding callable variable

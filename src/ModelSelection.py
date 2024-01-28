@@ -1,5 +1,4 @@
 from ast import Raise
-from email import header
 from operator import index
 from matplotlib.pylab import f
 from pathlib import Path
@@ -12,7 +11,8 @@ import itertools
 import csv
 import os
 import ast
-import pandas as pd
+import pandas
+import time
 
 from MyProcess import *
 
@@ -326,7 +326,8 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
-                print('pid:', os.getpid(), ' started new kfold' , index_con, '/', len(configuration))
+                time.sleep(1)
+                print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(configuration))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
                 list_to_write =(list(configuration) + 

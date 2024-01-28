@@ -69,8 +69,8 @@ class NeuralNetwork:
         
         'adamax',
         'adamax_learning_rate',
-        'exp_decay_rates_1',
-        'exp_decay_rates_2',
+        'exp_decay_rate_1',
+        'exp_decay_rate_2',
         }
     train_stats = {
         'epochs',
@@ -97,8 +97,8 @@ class NeuralNetwork:
               
               'adamax',
               'adamax_learning_rate',
-              'exp_decay_rates_1',
-              'exp_decay_rates_2',
+              'exp_decay_rate_1',
+              'exp_decay_rate_2',
               
               'metrics', 
               'collect_data', 
@@ -136,17 +136,23 @@ class NeuralNetwork:
 
     def fromJSON(json_str):
         a = json.loads(json_str)
-        
+
         nn = NeuralNetwork(a['topology'])
-        for n in nn.neurons[nn.input_size:]:
-            n.w = np.array(a[n.index])
+        if isinstance(list(a.keys())[0], str):
+            for n in nn.neurons[nn.input_size:]:
+                n.w = np.array(a[str(n.index)])
+        else:
+            for n in nn.neurons[nn.input_size:]:
+                n.w = np.array(a[n.index])
+                
+        return nn
         
     def toJSON(self):
         save = {}
         save['topology'] = self.topology
         for neuron in self.neurons[self.input_size:]:
             save[neuron.index] = list(neuron.w)
-        return json.dump(save)
+        return json.dumps(save)
         
     def __get_function_from_string(self, name:str):
         '''
@@ -206,11 +212,12 @@ class NeuralNetwork:
             
         # All Neurons dependecies of successors and predecessors are filled inside the objects
         for node in topology:
+            unit_index = int(node)
             unit_type = topology[node][0]
             
             if not unit_type.startswith('output'): # Output units have no successors
                 unit_successors = [units[u] for u in topology[node][3]]
-                units[node].extend_successors(unit_successors)
+                units[unit_index].extend_successors(unit_successors)
 
         self.neurons = units
         self.n_neurons = len(self.neurons)
@@ -366,8 +373,8 @@ class NeuralNetwork:
               
               adamax:bool = False,
               adamax_learning_rate:float = 0.01,
-              exp_decay_rates_1:float = 0.9,
-              exp_decay_rates_2:float = 0.999,
+              exp_decay_rate_1:float = 0.9,
+              exp_decay_rate_2:float = 0.999,
               
               metrics:list=[], 
               collect_data:bool=True, 
@@ -439,8 +446,8 @@ class NeuralNetwork:
             
             'adamax':adamax,
             'adamax_learning_rate':adamax_learning_rate,
-            'exp_decay_rates_1':exp_decay_rates_1,
-            'exp_decay_rates_2':exp_decay_rates_2,
+            'exp_decay_rate_1':exp_decay_rate_1,
+            'exp_decay_rate_2':exp_decay_rate_2,
 
             # --early stopping stats--
             'best_validation_training_error': np.Inf,
@@ -450,27 +457,29 @@ class NeuralNetwork:
             'epochs':0,      
         }
         
-        
         # print some information
         
         if collect_data: # take training time for the batch
-            stats['total_train_time'] = datetime.datetime.now() - datetime.datetime.now(),
-            stats['mean_epoch_train_time'] = 0,
-            stats['units_weights'] = {},
+            stats['total_train_time'] = datetime.datetime.now() - datetime.datetime.now()
+            stats['mean_epoch_train_time'] = 0
+            stats['units_weights'] = {}
             stats['units_weights_batch'] = {}
+            
             for mes in metrics:
             # epoch stats
                 stats['training_' + mes.__name__] = []
                 stats['validation_' + mes.__name__] = []
-                # batch stats
-                stats['training_batch_' + mes.__name__] = []
-                stats['validation_batch_' + mes.__name__] = []
+                if collect_data_batch:
+                    # batch stats
+                    stats['training_batch_' + mes.__name__] = []
+                    stats['validation_batch_' + mes.__name__] = []
 
             for unit in self.neurons[self.input_size:]:
                 # epoch stats
                 stats['units_weights'][unit.index] = []
-                # batch stats
-                stats['units_weights_batch'][unit.index] = []
+                if collect_data_batch:
+                    # batch stats
+                    stats['units_weights_batch'][unit.index] = []
             
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
@@ -485,7 +494,7 @@ class NeuralNetwork:
 
                 if adamax:
                     for neuron in self.neurons[self.input_size:]:
-                        neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rates_1, exp_decay_rates_2, lambda_tikhonov)
+                        neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rate_1, exp_decay_rate_2, lambda_tikhonov)
                 else:
                     for neuron in self.neurons[self.input_size:]:
                         neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
@@ -497,7 +506,7 @@ class NeuralNetwork:
                         if not validation_set is None:
                             stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
                     for unit in self.neurons[self.input_size:]:
-                        stats['units_weights_batch'][unit.index].append(unit.w.copy())
+                        stats['units_weights_batch'][unit.index].append(list(unit.w))
 
                 batch_index += batch_size
                 if batch_index >= training_set_length:
@@ -537,7 +546,7 @@ class NeuralNetwork:
 
                             if verbose: metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
                         for unit in self.neurons[self.input_size:]:
-                            stats['units_weights'][unit.index].append(unit.w.copy())  
+                            stats['units_weights'][unit.index].append(list(unit.w))
 
                         if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
                         # take training time for the batch
@@ -546,8 +555,9 @@ class NeuralNetwork:
             raise e
         
         # if nesterov is exploited, the weight needs to be modified for the final use
-        for neuron in self.neurons[self.input_size:]:
-            neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
+        if nesterov:
+            for neuron in self.neurons[self.input_size:]:
+                neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 
             
         # final stats gathering
         stats['epochs'] = epochs

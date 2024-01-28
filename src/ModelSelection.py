@@ -327,7 +327,7 @@ class ModelSelection:
             
             try:
                 
-                print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(configuration))
+                print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(hyperparameters))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
                 list_to_write =(list(configuration) + 

@@ -143,23 +143,26 @@ class ModelSelection:
         'random_state' : None,
 
         'lambda_tikhonov' : 0.0,
-        'alpha_momentum' : 0.5,
+        
         'learning_rate' : 0.1,
-        'adamax_learning_rate': 0.002,
+        'alpha_momentum' : 0.5,
         'lr_decay_tau' : 0,
         'eta_tau' : 0.01,
-        'batch_size' : 1,
-        'max_epochs' : 100,
-        'retraing_es_error': -1,
         'nesterov' : False,
+        
         'adamax': False,
+        'adamax_learning_rate': 0.002,
         'exp_decay_rate_1':0.9,
         'exp_decay_rate_2':0.999,
-        'error_increase_tolerance' : 0.0001,
-        'patience' : 10,
-        'min_epochs' : 0,
-        'metrics':[ErrorFunctions.mean_squared_error, ],
         
+        'batch_size' : 1,
+        'min_epochs' : 0,
+        'max_epochs' : 100,
+        'patience' : 10,
+        'error_increase_tolerance' : 0.0001,
+        'retraing_es_error': -1,
+
+        'metrics':[ErrorFunctions.mean_squared_error, ],      
         'topology': {}, # must be inizialized
 
         'collect_data':False, 
@@ -249,12 +252,15 @@ class ModelSelection:
         backup_file = [f for f in os.listdir(self.partials_backup_path) if f.startswith(self.partials_backup_prefix)]
 
         backup_file = list(map(lambda f: os.path.join(self.partials_backup_path, f), backup_file))
-        df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
         
-        for file in backup_file:
-            os.remove(file)
+        to_concat = [pandas.read_csv(f, header = 0) for f in backup_file]
+        if to_concat:
+            df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
             
-        df.to_csv(results_file_name, index=False)
+            for file in backup_file:
+                os.remove(file)
+                
+            df.to_csv(results_file_name, index=False)
 
         return results_file_name
 
@@ -315,7 +321,7 @@ class ModelSelection:
                 list_to_write =(list(configuration) + 
                                 [stats] + 
                                 [x for x in stats['mean_metrics']] + 
-                                ['mean_' + x for x in stats['variance_metrics']] + 
+                                [x for x in stats['variance_metrics']] + 
                                 [stats['mean_best_validation_training_error']])
                 writer.writerow(list_to_write)
             

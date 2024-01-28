@@ -1,5 +1,4 @@
 from ast import Raise
-from email import header
 from operator import index
 from matplotlib.pylab import f
 from pathlib import Path
@@ -12,7 +11,8 @@ import itertools
 import csv
 import os
 import ast
-import pandas as pd
+import pandas
+import time
 
 from MyProcess import *
 
@@ -244,7 +244,7 @@ class ModelSelection:
         print("Already done: ", len(done_configurations))
         print('tot conf:', len(configurations))
         configurations = list(filter(lambda x: x not in done_configurations, configurations))
-        print('removed already done conf:', len(configurations))
+        print('remaining conf:', len(configurations))
         
         random.shuffle(configurations)
         
@@ -307,7 +307,7 @@ class ModelSelection:
             
 
         # for every configuration create a new clean model and train it
-        for configuration in hyperparameters:
+        for index_con, configuration in enumerate(hyperparameters):
             grid_val = self.default_values.copy()
             for i, hyper_param in enumerate(configuration): 
                 grid_val[hyperparameters_name[i]] = hyper_param
@@ -326,6 +326,8 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
+                
+                print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(hyperparameters))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
                 list_to_write =(list(configuration) + 
@@ -359,7 +361,7 @@ class ModelSelection:
         
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, constraints, recovery)
-        print('tot conf:', len(configurations))
+        print('tot conf to do:', len(configurations))
         if n_proc == 1: # sequential execution
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return
@@ -375,6 +377,7 @@ class ModelSelection:
             os.makedirs(partial_data_dir)
 
         for i in range(n_proc): # distribute equally the workload among the processes
+            time.sleep(1)
             start = end
             if remainder > 0:
                 end += single_conf_size + 1

@@ -58,7 +58,6 @@ def interactive_3d_plot(dataframe, x_col, y_col, z_col, color_col, size_col=None
     )
     return fig
 
-
 # -- create data structures --
 def create_dataset(n_items, n_input, input_range, output_functions, seed):
     random.seed(seed)

@@ -298,7 +298,7 @@ class ModelSelection:
             writer.writerow(hyperparameters_name + 
                                        ['stats'] +
                                        ['mean_' + x for x in metrics_name] + 
-                                       ['val_' + x for x in metrics_name] + 
+                                       ['var_' + x for x in metrics_name] + 
                                        ['mean_best_validation_training_error'])
             back_up.flush()
         else: # if file exists i only add more data

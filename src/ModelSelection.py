@@ -307,7 +307,7 @@ class ModelSelection:
             
 
         # for every configuration create a new clean model and train it
-        for configuration in hyperparameters:
+        for index_con, configuration in enumerate(hyperparameters):
             grid_val = self.default_values.copy()
             for i, hyper_param in enumerate(configuration): 
                 grid_val[hyperparameters_name[i]] = hyper_param
@@ -326,6 +326,7 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
+                print('pid:', os.getpid(), ' started new kfold' , index_con, '/', len(configuration))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
                 list_to_write =(list(configuration) + 

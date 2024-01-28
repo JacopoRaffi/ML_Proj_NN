@@ -188,12 +188,18 @@ class ModelSelection:
         restore_file = self.__merge_csv_file(os.path.join(self.partials_backup_path, self.partials_backup_prefix + "0.csv"))
         
         csv = pandas.read_csv(restore_file)
-        backup_hyperparameters = csv.columns.values.tolist()[:-1]
+
+        stats_columns = csv.columns.get_loc("stats")
+        columns_to_drop = list(csv.columns[stats_columns:])
+        csv = csv.drop(columns_to_drop, axis=1)
         
+        backup_hyperparameters = csv.columns.values.tolist()
+
         if hyperparameters is not None:
-            if backup_hyperparameters == hyperparameters: return None, False
+            if backup_hyperparameters != hyperparameters: 
+                return None, False
         
-        done_configurations = csv[csv.columns.difference(['stats'])].values.tolist()
+        done_configurations = csv.values.tolist()
         
         return done_configurations, True
 
@@ -207,8 +213,8 @@ class ModelSelection:
         '''
         done_configurations = []
         if recovery:
-            done_configurations, success = self.__restore_backup(hyperparameters.keys())
-
+            done_configurations, success = self.__restore_backup(list(hyperparameters.keys()))
+            
             if not success:
                 Raise(ValueError('The specified hyperparameters not correspond to backup data found'))
         
@@ -219,7 +225,7 @@ class ModelSelection:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
 
-        configurations = [list(item) for item in list(itertools.product(*configurations)) if list(item) not in done_configurations]
+        configurations = [list(item) for item in list(itertools.product(*configurations))]
         
         for c in configurations:
             for key in constraints:
@@ -234,6 +240,11 @@ class ModelSelection:
 
         configurations.sort()
         configurations = list(k for k,_ in itertools.groupby(configurations))
+
+        print("Already done: ", len(done_configurations))
+        print('tot conf:', len(configurations))
+        configurations = list(filter(lambda x: x not in done_configurations, configurations))
+        print('removed already done conf:', len(configurations))
         
         random.shuffle(configurations)
         
@@ -315,7 +326,6 @@ class ModelSelection:
             if verbose: print("Training a new model : ", args_train)
             
             try:
-                print(os.getpid(), 'started new kfold')
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
                 list_to_write =(list(configuration) + 

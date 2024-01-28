@@ -439,32 +439,31 @@ class NeuralNetwork:
 
             # -- training stats --
             # epoch stats
-            'epochs':0,
-            'total_train_time': datetime.datetime.now() - datetime.datetime.now(),
-            'mean_epoch_train_time':0,
-            'units_weights' : {},
-            
-            
-            # batch stats
-            'units_weights_batch' : {}
+            'epochs':0,      
         }
-        for mes in metrics:
-            # epoch stats
-            stats['training_' + mes.__name__] = []
-            stats['validation_' + mes.__name__] = []
-            # batch stats
-            stats['training_batch_' + mes.__name__] = []
-            stats['validation_batch_' + mes.__name__] = []
-
-        for unit in self.neurons[self.input_size:]:
-            # epoch stats
-            stats['units_weights'][unit.index] = []
-            # batch stats
-            stats['units_weights_batch'][unit.index] = []
+        
         
         # print some information
         
         if collect_data: # take training time for the batch
+            stats['total_train_time'] = datetime.datetime.now() - datetime.datetime.now(),
+            stats['mean_epoch_train_time'] = 0,
+            stats['units_weights'] = {},
+            stats['units_weights_batch'] = {}
+            for mes in metrics:
+            # epoch stats
+                stats['training_' + mes.__name__] = []
+                stats['validation_' + mes.__name__] = []
+                # batch stats
+                stats['training_batch_' + mes.__name__] = []
+                stats['validation_batch_' + mes.__name__] = []
+
+            for unit in self.neurons[self.input_size:]:
+                # epoch stats
+                stats['units_weights'][unit.index] = []
+                # batch stats
+                stats['units_weights_batch'][unit.index] = []
+            
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
 

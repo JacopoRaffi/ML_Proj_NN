@@ -249,12 +249,15 @@ class ModelSelection:
         backup_file = [f for f in os.listdir(self.partials_backup_path) if f.startswith(self.partials_backup_prefix)]
 
         backup_file = list(map(lambda f: os.path.join(self.partials_backup_path, f), backup_file))
-        df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
         
-        for file in backup_file:
-            os.remove(file)
+        to_concat = [pandas.read_csv(f, header = 0) for f in backup_file]
+        if to_concat:
+            df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)
             
-        df.to_csv(results_file_name, index=False)
+            for file in backup_file:
+                os.remove(file)
+                
+            df.to_csv(results_file_name, index=False)
 
         return results_file_name
 
@@ -315,7 +318,7 @@ class ModelSelection:
                 list_to_write =(list(configuration) + 
                                 [stats] + 
                                 [x for x in stats['mean_metrics']] + 
-                                ['mean_' + x for x in stats['variance_metrics']] + 
+                                [x for x in stats['variance_metrics']] + 
                                 [stats['mean_best_validation_training_error']])
                 writer.writerow(list_to_write)
             

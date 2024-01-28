@@ -439,39 +439,37 @@ class NeuralNetwork:
 
             # -- training stats --
             # epoch stats
-            'epochs':0,
-            'total_train_time': datetime.datetime.now() - datetime.datetime.now(),
-            'mean_epoch_train_time':0,
-            'units_weights' : {},
-            
-            
-            # batch stats
-            'units_weights_batch' : {}
+            'epochs':0,      
         }
-        for mes in metrics:
-            # epoch stats
-            stats['training_' + mes.__name__] = []
-            stats['validation_' + mes.__name__] = []
-            # batch stats
-            stats['training_batch_' + mes.__name__] = []
-            stats['validation_batch_' + mes.__name__] = []
-
-        for unit in self.neurons[self.input_size:]:
-            # epoch stats
-            stats['units_weights'][unit.index] = []
-            # batch stats
-            stats['units_weights_batch'][unit.index] = []
+        
         
         # print some information
         
         if collect_data: # take training time for the batch
+            stats['total_train_time'] = datetime.datetime.now() - datetime.datetime.now(),
+            stats['mean_epoch_train_time'] = 0,
+            stats['units_weights'] = {},
+            stats['units_weights_batch'] = {}
+            for mes in metrics:
+            # epoch stats
+                stats['training_' + mes.__name__] = []
+                stats['validation_' + mes.__name__] = []
+                # batch stats
+                stats['training_batch_' + mes.__name__] = []
+                stats['validation_batch_' + mes.__name__] = []
+
+            for unit in self.neurons[self.input_size:]:
+                # epoch stats
+                stats['units_weights'][unit.index] = []
+                # batch stats
+                stats['units_weights_batch'][unit.index] = []
+            
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
 
         try:
             # start training cycle
             while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
-                # print(self)
                 # batch
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                     self.predict(sample[:self.input_size])
@@ -504,7 +502,6 @@ class NeuralNetwork:
                     batch_index = batch_index%training_set_length
 
                     training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
-                    print("tr_err", training_err)
                     if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:

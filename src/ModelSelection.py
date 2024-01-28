@@ -12,7 +12,7 @@ import itertools
 import csv
 import os
 import ast
-import json
+import pandas as pd
 
 from MyProcess import *
 
@@ -75,33 +75,41 @@ class ModelSelection:
             validation_set = data_set[split_size*i : split_size*(i + 1)]
             
             new_stats = model.train(training_set, validation_set, *model_args)
+            
+            
             tr_errors[i] = new_stats['best_validation_training_error']
             if not stats: # first iteration
                 for key in model.input_stats:
-                    stats[key] = new_stats[key]
+                    if key in new_stats:
+                        stats[key] = new_stats[key]
                 for key in model.train_stats:
-                    stats[key] = [new_stats[key]]
+                    if key in new_stats:
+                        stats[key] = [new_stats[key]]
                 for mes in metrics:
-                    stats['training_' + mes.__name__] = [new_stats['training_' + mes.__name__]]
-                    stats['validation_' + mes.__name__] = [new_stats['validation_' + mes.__name__]]
-                    # batch stats
-                    stats['training_batch_' + mes.__name__] = [new_stats['training_batch_' + mes.__name__]]
-                    stats['validation_batch_' + mes.__name__] = [new_stats['validation_batch_' + mes.__name__]]
+                    if 'training_' + mes.__name__ in new_stats:
+                        stats['training_' + mes.__name__] = [new_stats['training_' + mes.__name__]]
+                        stats['validation_' + mes.__name__] = [new_stats['validation_' + mes.__name__]]
+                        # batch stats
+                        stats['training_batch_' + mes.__name__] = [new_stats['training_batch_' + mes.__name__]]
+                        stats['validation_batch_' + mes.__name__] = [new_stats['validation_batch_' + mes.__name__]]
             else: # other iterations
                 for key in model.train_stats:
-                    stats[key].append(new_stats[key])
+                    if key in new_stats:
+                        stats[key].append(new_stats[key])
                 for mes in metrics:
-                    stats['training_' + mes.__name__].append(new_stats['training_' + mes.__name__])
-                    stats['validation_' + mes.__name__].append(new_stats['validation_' + mes.__name__])
-                    # batch stats
-                    stats['training_batch_' + mes.__name__].append(new_stats['training_batch_' + mes.__name__])
-                    stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
+                    if 'training_' + mes.__name__ in new_stats:
+                        stats['training_' + mes.__name__].append(new_stats['training_' + mes.__name__])
+                        stats['validation_' + mes.__name__].append(new_stats['validation_' + mes.__name__])
+                        # batch stats
+                        stats['training_batch_' + mes.__name__].append(new_stats['training_batch_' + mes.__name__])
+                        stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
                         
             outputs = model.predict_array(validation_set[:,:model.input_size])
             targets = validation_set[:,model.input_size:]
             for j, met in enumerate(metrics):
-                val_errors[i, j] = met(outputs, targets)#model.predict_array(validation_set[:,:model.input_size]), validation_set[:,model.input_size:])
-        
+                val_errors[i, j] = met(outputs, targets)
+                
+                
         stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))
         stats['mean_best_validation_training_error'] = np.mean(tr_errors)
@@ -265,11 +273,16 @@ class ModelSelection:
         return: -
 
         '''
-        
+        # metric is a default param
+        metrics_name = [m.__name__ for m in self.default_values['metrics']]
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'mean_metrics', 'variance_metrics', 'mean_best_validation_training_error'])
+            writer.writerow(hyperparameters_name + 
+                                       ['stats'] +
+                                       ['mean_' + x for x in metrics_name] + 
+                                       ['val_' + x for x in metrics_name] + 
+                                       ['mean_best_validation_training_error'])
             back_up.flush()
         else: # if file exists i only add more data
             back_up = open(backup, 'a') 
@@ -283,11 +296,11 @@ class ModelSelection:
                 grid_val[hyperparameters_name[i]] = hyper_param
 
             # create a new model
-            
-            metrics_name = [m.__name__ for m in grid_val['metrics']]
             grid_val['topology'] = ast.literal_eval(grid_val['topology'])
             args_init = [grid_val[key] for key in self.inzialization_arg_names]
             nn = NeuralNetwork(*args_init)
+            
+            
             # train the model
             grid_val['learning_rate'] = grid_val['learning_rate'] / grid_val['batch_size']
             grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
@@ -298,7 +311,15 @@ class ModelSelection:
             try:
                 print(os.getpid(), 'started new kfold')
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
-                writer.writerow(list(configuration) + [stats, metrics_name, stats['mean_metrics'], stats['variance_metrics'], stats['mean_best_validation_training_error']]) 
+                
+                list_to_write =(list(configuration) + 
+                                [stats] + 
+                                [x for x in stats['mean_metrics']] + 
+                                ['mean_' + x for x in stats['variance_metrics']] + 
+                                [stats['mean_best_validation_training_error']])
+                writer.writerow(list_to_write)
+            
+            
             except Exception:
                 writer.writerow(list(configuration) + [None, None, None, None, None]) 
             
@@ -306,7 +327,7 @@ class ModelSelection:
 
         back_up.close()
 
-    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, constraints:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False):
+    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False, constraints:dict = {}, ):
         '''
         Implementation of the grid search algorithm
 

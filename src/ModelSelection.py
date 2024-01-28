@@ -143,23 +143,26 @@ class ModelSelection:
         'random_state' : None,
 
         'lambda_tikhonov' : 0.0,
-        'alpha_momentum' : 0.5,
+        
         'learning_rate' : 0.1,
-        'adamax_learning_rate': 0.002,
+        'alpha_momentum' : 0.5,
         'lr_decay_tau' : 0,
         'eta_tau' : 0.01,
-        'batch_size' : 1,
-        'max_epochs' : 100,
-        'retraing_es_error': -1,
         'nesterov' : False,
+        
         'adamax': False,
+        'adamax_learning_rate': 0.002,
         'exp_decay_rate_1':0.9,
         'exp_decay_rate_2':0.999,
-        'error_increase_tolerance' : 0.0001,
-        'patience' : 10,
-        'min_epochs' : 0,
-        'metrics':[ErrorFunctions.mean_squared_error, ],
         
+        'batch_size' : 1,
+        'min_epochs' : 0,
+        'max_epochs' : 100,
+        'patience' : 10,
+        'error_increase_tolerance' : 0.0001,
+        'retraing_es_error': -1,
+
+        'metrics':[ErrorFunctions.mean_squared_error, ],      
         'topology': {}, # must be inizialized
 
         'collect_data':False, 

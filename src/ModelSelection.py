@@ -321,6 +321,7 @@ class ModelSelection:
             # train the model
             grid_val['learning_rate'] = grid_val['learning_rate'] / grid_val['batch_size']
             grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
+            grid_val['lr_decay_tau'] = grid_val['lr_decay_tau'] * (len(data_set)/grid_val['batch_size'])
             grid_val['eta_tau'] = grid_val['learning_rate']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
             if verbose: print("Training a new model : ", args_train)

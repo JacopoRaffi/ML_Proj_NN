@@ -1,10 +1,8 @@
 import numpy as np
 import math
-#from ActivationFunctions import ActivationFunctions
 import ActivationFunctions
-from ABCNeuron import ABCNeuron
 
-class OutputNeuron(ABCNeuron):
+class OutputNeuron():
     '''
     Implementation of an output neuron composing the NN
     
@@ -132,7 +130,6 @@ class OutputNeuron(ABCNeuron):
         
         return: -
         '''
-        self.steps += 1
         
         # our gradient is already multiplyed by -1 !!!!
         gradient = self.partial_weight_update * -1

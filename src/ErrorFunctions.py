@@ -2,14 +2,14 @@ import numpy as np
 import math
 import sklearn.metrics as skm
 
-'''The collections of all implemented error functions and related methods'''
+'''The collections of all implemented error functions'''
 
 def mean_euclidean_error(outputs:np.ndarray, targets:np.ndarray):
     '''
     Calculates the Mean Euclidean Error for a given learning set of patterns
     
     param outputs: the predicted NN's outputs
-    param targets: the actual targets
+    param targets: the targhet values
 
     return: the MEE value    
     '''
@@ -25,7 +25,7 @@ def mean_squared_error(outputs:np.ndarray, targets:np.ndarray):
     Calculates the Mean Squared Error for a given learning set of patterns
     
     param outputs: the predicted NN's outputs
-    param targets: the actual targets
+    param targets: the targhet values
 
     return: the MSE value (or RMSE value)
     '''
@@ -42,8 +42,8 @@ def accuracy(outputs:np.ndarray, targets:np.ndarray):
     Calculates the accuracy for a given learning set of patterns, computed as:
         Accuracy = (TP + TN) / (TP + TN + FP + FN)
     
-    param outputs: the predicted NN's outputs, only 1-dimension array are allowed
-    param targets: the actual targets
+    param outputs: the predicted NN's outputs, boolean values or the probability of the positive class
+    param targets: the targhet values, trictly boolean values
 
     return: the accuracy value
     '''
@@ -56,9 +56,3 @@ def accuracy(outputs:np.ndarray, targets:np.ndarray):
     
     ret = sum((targets) == predictions) / N
     return ret 
-
-if __name__ == '__main__':
-    outputs = np.array([[3.2],[3.3],[3.3],[3.4],[3.5],[3.54]])
-    targets = np.array([[5.1212],[5.1212],[5.1212],[5.121],[5.12121],[5.12]])
-
-    print(mean_euclidean_error(outputs, targets), np.mean(np.linalg.norm(outputs-targets, axis = 1)))

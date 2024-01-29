@@ -75,8 +75,6 @@ class ModelSelection:
             validation_set = data_set[split_size*i : split_size*(i + 1)]
             
             new_stats = model.train(training_set, validation_set, *model_args)
-            
-            
             tr_errors[i] = new_stats['best_validation_training_error']
             if not stats: # first iteration
                 for key in model.input_stats:
@@ -106,14 +104,18 @@ class ModelSelection:
                         
             outputs = model.predict_array(validation_set[:,:model.input_size])
             targets = validation_set[:,model.input_size:]
+
             for j, met in enumerate(metrics):
-                val_errors[i, j] = met(outputs, targets)
                 
-                
+                metr = met(outputs, targets)
+                val_errors[i, j] = metr
+            
+        
         stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))
         stats['mean_best_validation_training_error'] = np.mean(tr_errors)
 
+        print(stats)
         return stats
 
     def __init__(self, cv_backup:str):

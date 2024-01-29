@@ -36,6 +36,8 @@ COLUMNS_ORDER = ['topology', 'stats',
  'mean_mean_squared_error',
  'var_mean_euclidean_error',
  'var_mean_squared_error',
+ 'mean_accuracy',
+ 'var_accuracy',
  'mean_best_validation_training_error']
 
 # -- TRAIN -- 
@@ -85,7 +87,7 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict):
     default_values['learning_rate'] = default_values['learning_rate'] / default_values['batch_size']
     default_values['adamax_learning_rate'] = default_values['adamax_learning_rate'] / default_values['batch_size']
     default_values['eta_tau'] = default_values['learning_rate']/100 # eta tau more or less 1% of eta_0
-    default_values['lr_decay_tau'] = default_values['lr_decay_tau'] * (len(data_set)/default_values['batch_size'])
+    default_values['lr_decay_tau'] = default_values['lr_decay_tau'] * ((len(tr_set) + len(val_set))/default_values['batch_size'])
     default_values['topology'] = topologies_dict[df.iloc[index]['topology']]
     default_values['training_set'] = tr_set
     default_values['validation_set'] = val_set

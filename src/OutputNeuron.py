@@ -68,18 +68,6 @@ class OutputNeuron(ABCNeuron):
         
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
-        
-    
-    def add_nesterov_momentum(self, alpha_momentum:float = 0.0):
-        '''
-        Updates the weight vector (w) of the Neuron with Nesterov's Momentum
-        this update should be done before the next minibatch learning iteration
-        
-        :param alpha_momentum: Nertov's Momentum Hyperparameter
-        :return: -
-        '''
-        
-        self.w = self.w + alpha_momentum*self.old_weight_update
 
     def update_weights(self, learning_rate:float = 0.01, lr_decay_tau:int = 0, 
                        eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
@@ -211,7 +199,7 @@ class OutputNeuron(ABCNeuron):
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
         
-        return self.last_predict
+        return self.last_predict#.copy()
     
     def backward(self, target:float):
         '''

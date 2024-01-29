@@ -142,16 +142,15 @@ class HiddenNeuron():
         '''
         Updates the weight vector (w) of the Neuron using Adamax
         
-        is a combination of decreasing learning rate, 
+        is the application of the Adam algoritm regularized with the infinity norm of the gradient
         
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         param exp_decay_rates_1: Exponential decay rates for the momentum
         param exp_decay_rates_2: Exponential decay rates for the infinite norm
+        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         
         return: -
         '''
-        
-        self.steps += 1
         
         # our gradient is already multiplyed by -1 !!!!
         gradient = self.partial_weight_update * -1

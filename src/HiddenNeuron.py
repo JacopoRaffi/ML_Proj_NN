@@ -72,7 +72,6 @@ class HiddenNeuron():
         self.exponentially_weighted_infinity_norm = 1 # variable used in for the adamax weight update
         # inizialized to zero to prevent bad behaviors when combinated with the ReLU (zero derivate)
         
-        
         # the creation of the variables is not necessary, but can help in preventing error, 
         # also resetting the variable can help in this sense
     
@@ -173,7 +172,6 @@ class HiddenNeuron():
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
-        #tmp[0] = 0 # avoid to regularize the bias
         weight_update = weight_update - (lambda_tikhonov * tmp)
         
         # here the weights are finally updated
@@ -270,7 +268,7 @@ class HiddenNeuron():
 
         # the summation is multiplied by delta error to get the partial weight update
         self.partial_weight_update += (delta_error * predecessors_outputs)
-    
+
     def add_successor(self, neuron):
         '''
         Adds a neuron to the list of the Neuron's successors and
@@ -282,19 +280,6 @@ class HiddenNeuron():
         '''
         self.successors.append(neuron)
         neuron.add_predecessor(self)
-    
-    def extend_successors(self, neurons:list):
-        '''
-        Extends the list of the Neuron's successors and
-        update the predecessors' list of the successors neurons with the current neuron
-        
-        param neurons: the list of Neurons to add to the list of successors
-
-        return: -
-        '''
-        self.successors.extend(neurons)
-        for successor in neurons:
-            successor.add_predecessor(self)
 
     def add_predecessor(self, neuron):
         '''

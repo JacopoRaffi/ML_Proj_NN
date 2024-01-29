@@ -25,41 +25,42 @@ class ModelSelection:
     
     Attributes:
     -----------
-    backup_file: file
-        file to backup the model selection's state
-
+    self.partials_backup_prefix: str
+        the prefix of the backup file path
+    self.partials_backup_path: str
+        the foldere where to store the backup
+    self.backup: file
+        the backup file of the istance
+    self.default_values: dict
+        the default input values used when training new models
+    self.inzialization_arg_names: list of string
+        the ordered list that contains the input of the NeuralNetwork's constructor
+    self.train_arg_names: list of string
+        the ordered list that contains the input of the train method of NeuralNetwork
     '''
 
     def kf_train(model, data_set:np.ndarray, k:int, metrics:list, model_args:list):
         '''
-        Compute the Backpropagation training algorithm on the NN for given a data set, estimating the hyperparameter performances
-        trough validation in k folds of the data
+        Compute the Backpropagation training algorithm on the NN for a given data set, estimating the hyperparameter performances
+        trough k-fold validation
         
         param data_set: a set of samples (pattern-target pairs) for supervised learning
         param k: number of data folds (data splits)
-        param batch_size: parameter which determines the amount of training samples consumed in each iteration of the algorithm
-            -> 1: Online
-            -> 1 < batch_size < len(TR): Minibatch with minibatch size equals to batch_size
-            -> len(TR): Batch
-        param max_epochs: the maximum number of epochs (consumption of the whole training set) on which the algorithm will iterate
-        param error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
-            -> "mee": Mean Euclidean Error
-            -> "lms": Least Mean Square
-        param error_decrease_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
-        param patience: the number of epochs to wait when a "no more significant error decrease" occurs
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
+        param metrics: list of metrics used in the training of the model
+        param model_args: list of arguments given in input when training a the model
 
-        return: mean and variance of the validation error
+        return: a dct containing all the stats accumulated by the model during training, plus mean and variance
+                of the final evaluation metrics computed for every fold
         '''
         
         # Computation of the size of each split
         data_len = len(data_set)
         split_size = math.floor(data_len/k)
         
+        # inizializing usefoul variables
         val_errors = np.empty((k, len(metrics)))
         tr_errors = np.empty(k)
+        # return val
         stats = {}
         split_index = 0
         
@@ -69,12 +70,17 @@ class ModelSelection:
         # At each iteration only one of the K subsets of data is used as the validation set, 
         # while all others are used for training the model validated on it.
         for i in range(k):
+            # index to compute the validation splits
             split_index += split_size
             model.reset() # reset of the network to proceeds towards the next training (next fold)
+            # computing the new training annd validation sets
             training_set = np.append(data_set[:split_size*i], data_set[split_size*(i + 1):], axis=0)
             validation_set = data_set[split_size*i : split_size*(i + 1)]
             
+            # training and gathering stats
             new_stats = model.train(training_set, validation_set, *model_args)
+            
+            # here the stats are accumulated intelligently
             tr_errors[i] = new_stats['best_validation_training_error']
             if not stats: # first iteration
                 for key in model.input_stats:
@@ -102,15 +108,15 @@ class ModelSelection:
                         stats['training_batch_' + mes.__name__].append(new_stats['training_batch_' + mes.__name__])
                         stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
                         
+            # we compute the final valdation metrics
             outputs = model.predict_array(validation_set[:,:model.input_size])
             targets = validation_set[:,model.input_size:]
 
             for j, met in enumerate(metrics):
-                
                 metr = met(outputs, targets)
                 val_errors[i, j] = metr
             
-        
+        # practical stats change
         stats['mean_metrics'] = list(np.mean(val_errors, axis=0))
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))
         stats['mean_best_validation_training_error'] = np.mean(tr_errors)
@@ -121,19 +127,20 @@ class ModelSelection:
         '''
         Constructor of the class
         
-        param cv_backup: file to backup the model selection's state
+        param cv_backup: file to backup the state of the computations
         
         return: -
         ''' 
+        # if backup is not good we raise an exeption
         if cv_backup is not None:
             if cv_backup.endswith('.csv'):
                 self.backup = cv_backup
             else:
                 Raise(ValueError(' cv_backup extension must be .csv'))
-                
         else:
             Raise(ValueError('Backup file missing'))
-            
+        
+        # inziializing usefoul variables
         self.partials_backup_prefix = 'tmp_'
         self.partials_backup_path = '../data/gs_data/backup'
         self.backup = cv_backup
@@ -179,15 +186,15 @@ class ModelSelection:
     
     def __restore_backup(self, hyperparameters:list = None):
         '''
-        Restore model selection's state from a backup file (csv format)
+        Restore model selection's state from a backup folder
 
         param backup_file: backup file list to be used to restore the state
         
         return: -
         '''
         
-        restore_file = self.__merge_csv_file(os.path.join(self.partials_backup_path, self.partials_backup_prefix + "0.csv"))
-        
+        # merge all the useful files
+        restore_file = self.__merge_csv_file(os.path.join(self.partials_backup_path, self.partials_backup_prefix + "0.csv"))    
         csv = pandas.read_csv(restore_file)
 
         stats_columns = csv.columns.get_loc("stats")
@@ -212,6 +219,7 @@ class ModelSelection:
 
         return: list of all the possible configurations and list of the hyperparameters' names
         '''
+        # if the istance is starting from a pre-existing backup, not all configuration needs to be tested
         done_configurations = []
         if recovery:
             done_configurations, success = self.__restore_backup(list(hyperparameters.keys()))
@@ -222,12 +230,13 @@ class ModelSelection:
         configurations = []
         names = list(hyperparameters.keys())
 
+        # here all the possible combination are computed
         for hyper_param in hyperparameters:
             if hyper_param in self.default_values.keys():
                 configurations.append(hyperparameters[hyper_param])
-
         configurations = [list(item) for item in list(itertools.product(*configurations))]
         
+        # here the constrains dict is used to delete all the matching configurations
         for c in configurations:
             for key in constraints:
                 constraint_func = constraints[key][0]
@@ -239,6 +248,7 @@ class ModelSelection:
                 for constraint in not_valid:
                     c[names.index(constraint)] = self.default_values[constraint]
 
+        # here the duplicated and modified configuration are eliminated
         configurations.sort()
         configurations = list(k for k,_ in itertools.groupby(configurations))
 
@@ -246,7 +256,8 @@ class ModelSelection:
         print('tot conf:', len(configurations))
         configurations = list(filter(lambda x: x not in done_configurations, configurations))
         print('remaining conf:', len(configurations))
-        
+
+        # we shuffle the configuration to equally distribute them through all the processes
         random.shuffle(configurations)
         
         return configurations, names
@@ -261,10 +272,11 @@ class ModelSelection:
         return: -
         '''
         
+        # all the configuration are taken from the files
         backup_file = [f for f in os.listdir(self.partials_backup_path) if f.startswith(self.partials_backup_prefix)]
-
         backup_file = list(map(lambda f: os.path.join(self.partials_backup_path, f), backup_file))
         
+        # merge them in a single dataframe and then save them in a sngle file called tmp_0 or the final backup
         to_concat = [pandas.read_csv(f, header = 0) for f in backup_file]
         if to_concat:
             df = pandas.concat([pandas.read_csv(f, header = 0) for f in backup_file], ignore_index=True)

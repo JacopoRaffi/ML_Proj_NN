@@ -1,8 +1,6 @@
-from ABCNeuron import ABCNeuron
 from InputNeuron import InputNeuron
 from HiddenNeuron import HiddenNeuron
 from OutputNeuron import OutputNeuron
-#from ActivationFunctions import ActivationFunctions
 import ActivationFunctions
 import ErrorFunctions
 

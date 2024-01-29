@@ -93,7 +93,7 @@ class HiddenNeuron():
         
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         param lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
-        param eta_tau: learning rate after iteration tau if lr_decay_tau > 0, before is used to 
+        param eta_tau: Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
                         make the learnig rate decay
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
@@ -152,19 +152,22 @@ class HiddenNeuron():
         return: -
         '''
         
-        # our gradient is already multiplyed by -1 !!!!
+        # our gradient is already multiplyed by -1 so we revers the sign
         gradient = self.partial_weight_update * -1
         
-        # Update biased first moment estimate
+        # update biased first moment estimate
         momentum = exp_decay_rates_1 * self.old_weight_update + (1 - exp_decay_rates_1) * gradient
         
-        # Update the exponentially weighted infinity norm
+        # update the exponentially weighted infinity norm
         self.exponentially_weighted_infinity_norm = max(self.exponentially_weighted_infinity_norm * exp_decay_rates_2, 
                                                         np.linalg.norm(gradient, ord=np.inf))
         
-        # Update parameters
+        # compute the final weight update
+        # momentum influence
         dummy_1 = momentum/self.exponentially_weighted_infinity_norm
+        # learning rate decay influence
         dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
+        # weight update
         weight_update = -(learning_rate/dummy_2)*dummy_1
         
         
@@ -173,6 +176,7 @@ class HiddenNeuron():
         #tmp[0] = 0 # avoid to regularize the bias
         weight_update = weight_update - (lambda_tikhonov * tmp)
         
+        # here the weights are finally updated
         self.w += weight_update
         
         # reset of every accumulative variable used
@@ -180,6 +184,7 @@ class HiddenNeuron():
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
         
+        # a fail fast approach
         if sum(np.isinf(self.w)): raise Exception('Execution Failed')
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
@@ -194,16 +199,21 @@ class HiddenNeuron():
         return: -
         '''
 
+        # here the predeccessors are counted
         self.n_predecessors = len(self.predecessors)
         self.n_successors = len(self.successors)
+        # here are created vectors of the correct len, counting the bias
         self.old_weight_update = np.zeros(self.n_predecessors + 1) # bias
         self.partial_weight_update = np.zeros(self.n_predecessors + 1) # bias
         
+        # the weights are chosen uniformly at random in the range taken in input
         self.w = random_generator.uniform(rand_range_min, rand_range_max, self.n_predecessors + 1) # bias
         
+        # reset of every accumulative variable
         self.steps = 0
         self.exponentially_weighted_infinity_norm = 1
         
+        # if fan_in the weights are reduced accordingly
         if fan_in:
             self.w = self.w * 2/(self.n_predecessors + 1)
         
@@ -215,6 +225,7 @@ class HiddenNeuron():
 
         return: -
         '''
+        # the input vector is initialized and computed
         input = np.empty(self.n_predecessors + 1)# bias
         input[0] = 1 # bias
         for index, p in enumerate(self.predecessors):
@@ -222,10 +233,11 @@ class HiddenNeuron():
 
         self.net = np.inner(self.w, input)
         self.last_predict = self.f(self.net, *self.f_parameters)
+        # the prediction is stored so that other neurons can use the value
      
     def accumulate_weighted_error(self, delta: float, weight: float):
         '''
-        function used by successors, accumulate the weighted error of the successors
+        Function used by successors, accumulate the weighted error of the successors.
 
         param delta: the error of the successor
         param weight: the weight of the successor that correspond to the output of this unit
@@ -243,20 +255,22 @@ class HiddenNeuron():
         
         return: -
         '''
-        
-        predecessors_outputs = np.zeros(self.n_predecessors + 1) # bias
+        # here we create the vector
+        predecessors_outputs = np.empty(self.n_predecessors + 1) # bias
         
         # computing delta error of the unit (before we have accumulated the successor's deltas in 'partial_successors_weighted_errors')
         delta_error = self.partial_successors_weighted_errors * ActivationFunctions.derivative(self.f, self.net, *self.f_parameters)
         
+        # here we compute the sum derived by the predeccessors
         predecessors_outputs[0] = 1 # bias
         for index, p in enumerate(self.predecessors):
             predecessors_outputs[index + 1] = p.last_predict # bias
             if p.type != "input":
                 p.accumulate_weighted_error(delta_error, self.w[index + 1]) # bias
 
-        self.partial_weight_update += (delta_error * predecessors_outputs)# accumulating weight updates for the batch version
-
+        # the summation is multiplied by delta error to get the partial weight update
+        self.partial_weight_update += (delta_error * predecessors_outputs)
+    
     def add_successor(self, neuron):
         '''
         Adds a neuron to the list of the Neuron's successors and

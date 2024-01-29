@@ -272,7 +272,7 @@ class ModelSelection:
         return: -
         '''
         
-        # all the configuration are taken from the files
+        # all the configuration are taken from the files, one for each process
         backup_file = [f for f in os.listdir(self.partials_backup_path) if f.startswith(self.partials_backup_prefix)]
         backup_file = list(map(lambda f: os.path.join(self.partials_backup_path, f), backup_file))
         
@@ -289,15 +289,14 @@ class ModelSelection:
         return results_file_name
 
     def __process_task_trainKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
-                        k_folds:int = 1, backup:str = None, verbose:bool = False):
+                        k_folds:int = 1, backup:str = None):
         '''
         Train the model with the given hyperparameters and the number of folds
 
-        param dataset: dataset to be used for K-Fold cross validation
+        param data_set: dataset used for the K-Fold cross validation
         param hyperparameters: dict of hyperparameters' configurations to be used for validation
         param hyperparameters_name: list of hyperparameters' names
         param k_folds: number of folds to be used in the cross validation
-        param topology: topology of the neural network
         param backup: backup file to be used to write the results
 
         return: -
@@ -305,6 +304,7 @@ class ModelSelection:
         '''
         # metric is a default param
         metrics_name = [m.__name__ for m in self.default_values['metrics']]
+        # the header of the csv is written to the file
         if not os.path.isfile(backup): 
             back_up = open(backup, 'a+') 
             writer = csv.writer(back_up)
@@ -321,6 +321,8 @@ class ModelSelection:
 
         # for every configuration create a new clean model and train it
         for index_con, configuration in enumerate(hyperparameters):
+            
+            # the hyperparameters are processed and used to start the model
             grid_val = self.default_values.copy()
             for i, hyper_param in enumerate(configuration): 
                 grid_val[hyperparameters_name[i]] = hyper_param
@@ -336,49 +338,49 @@ class ModelSelection:
             grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
             grid_val['eta_tau'] = grid_val['learning_rate']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
-            if verbose: print("Training a new model : ", args_train)
             
+            # if the execution fails the search does not stop
             try:
-                
+                # print some information at each new train
                 print('pid:', os.getpid(), ' started new kfold' , index_con + 1, '/', len(hyperparameters))
                 stats = ModelSelection.kf_train(nn, data_set, k_folds, grid_val['metrics'], args_train)
                 
+                # save the train results at every iteration
                 list_to_write =(list(configuration) + 
                                 [stats] + 
                                 [x for x in stats['mean_metrics']] + 
                                 [x for x in stats['variance_metrics']] + 
                                 [stats['mean_best_validation_training_error']])
                 writer.writerow(list_to_write)
-            
-            
+            #  of the execution fails the configuration is spared regardless
             except Exception:
                 writer.writerow(list(configuration) + [None, None, None, None, None]) 
-            
             back_up.flush()
 
         back_up.close()
 
     def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False, constraints:dict = {}, ):
         '''
-        Implementation of the grid search algorithm
+        Implementation of a completely configurable grid search
 
-        param data_set: training set to be used in the grid search
+        param data_set: training + validation to be used in the grid search
         param hyperparameters: dictionary with the hyperparameters to be tested
         param k_folds: number of folds to be used in the cross validation
-        param topology: topology of the neural network
-        param topology_name: name of the network topology
         param n_proc: number of processes to be used in the grid search
+        param recovery: if to recover a previous computation interrupted before the finish
+        param constraints: constraints to exlude some useless configuration, completely coonfigurable
 
-        return: the best hyperparameters' configuration
+        return: -
         '''
-        
+        # the input hyperparameters grid is processed
         hyperparameters = dict(sorted(hyperparameters.items()))
         configurations, names = self.__get_configurations(hyperparameters, constraints, recovery)
         print('tot conf to do:', len(configurations))
-        if n_proc == 1: # sequential execution
+        if n_proc == 1: # sequential execution if process is 1
             self.__process_task_trainKF(data_set, configurations, names, k_folds, self.backup)
             return
         
+        # creation of useful variables to start the processes
         remainder = len(configurations) % n_proc
         single_conf_size = int(len(configurations) / n_proc)
         start = end = 0
@@ -386,10 +388,13 @@ class ModelSelection:
         proc_pool = []
         partial_data_dir = Path(self.partials_backup_path).absolute()
 
+        # creation of the backup folder
         if not os.path.exists(partial_data_dir):
             os.makedirs(partial_data_dir)
-
-        for i in range(n_proc): # distribute equally the workload among the processes
+            
+        # distribute equally the workload among the processes
+        for i in range(n_proc): 
+            # to give some time to the machine (and not make orrible print at the start)
             time.sleep(1)
             start = end
             if remainder > 0:
@@ -410,7 +415,8 @@ class ModelSelection:
             
             remainder -= 1
            
-        for process in proc_pool: # join all the terminated processes
+        # join all the terminated processes
+        for process in proc_pool: 
             process.join()
 
         self.__merge_csv_file(self.backup)

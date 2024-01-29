@@ -104,9 +104,9 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=Fal
     
     
 # -- PLOT --
-def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, style=False):
+def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, style=False, font_size=14):
     x = np.arange(0, len(datas[0])).tolist()
-
+    plt.rcParams.update({'font.size': font_size})
     styles = ['-.', '-']
     if ax != None: plt.sca(ax=ax)
     if style:

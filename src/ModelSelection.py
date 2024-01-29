@@ -14,8 +14,6 @@ import ast
 import pandas
 import time
 
-from MyProcess import *
-
 from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
 

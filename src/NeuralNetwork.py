@@ -359,16 +359,16 @@ class NeuralNetwork:
               training_set:np.ndarray, 
               validation_set:np.ndarray = None, 
               batch_size:int = 1, 
-              max_epochs:int = 1024, 
-              retraing_es_error = -1,
+              max_epochs:int = 512, 
+              retraing_es_error = -1, # off
               error_increase_tolerance:float = 0.0001, 
-              patience: int = 8, 
-              min_epochs: int = 0,
+              patience: int = 5, 
+              min_epochs: int = 0, 
               learning_rate:float = 0.01,
-              lr_decay_tau:int = 0,
-              eta_tau:float = 0.0, 
-              lambda_tikhonov:float = 0.0, 
-              alpha_momentum:float = 0.0, 
+              lr_decay_tau:int = 0, # off
+              eta_tau:float = 0.0, # off
+              lambda_tikhonov:float = 0.0, # off
+              alpha_momentum:float = 0.0, # off
               nesterov:bool = False,
               
               adamax:bool = False,
@@ -552,6 +552,7 @@ class NeuralNetwork:
                         # take training time for the batch
                         start_time = datetime.datetime.now()
         except Exception as e:
+            print(e)
             raise e
         
         # if nesterov is exploited, the weight needs to be modified for the final use

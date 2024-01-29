@@ -1,10 +1,8 @@
 import numpy as np
 import math
-#from ActivationFunctions import ActivationFunctions
 import ActivationFunctions
-from ABCNeuron import ABCNeuron
 
-class OutputNeuron(ABCNeuron):
+class OutputNeuron():
     '''
     Implementation of an output neuron composing the NN
     

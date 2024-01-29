@@ -14,13 +14,16 @@ def derivative(fun:callable, input:float, *args):
     return: fun's derivative calculated on the input
     '''
 
+    # to correct compute the relud derivate around and in 0
     if fun == ReLU:
-        if input > 0: return 1
-        else: return 0
-        
+        if input > 0: return 1 # constant 1
+        else: return 0 # costant 0
+    
+    # to speed up the identity derivate that is always 1
     elif fun == identity:
         return 1
 
+    # we compute the derivate of the others functions with numpy.gradient
     else:
         x = numpy.array([input-0.001, input, input+0.001])
         y = numpy.array([fun(x_elem, *args) for x_elem in x])
@@ -32,7 +35,6 @@ def identity(input, *args):
     The identity function
     
     param input: the input of the function
-    param args[0]: ignored
     
     return: the results of the identity function
     '''
@@ -48,9 +50,8 @@ def sigmoid(input, slope, *args):
     
     return: the results of the sigmoid function
     '''
-    ret = 1/(1 + math.exp(-(input)))
-
-    return ret
+    
+    return 1/(1 + math.exp(-(input)))
 
 def tanh(input, slope, *args):
     '''
@@ -94,7 +95,6 @@ def ReLU(input, *args):
     The ReLU function
     
     param input: the input of the function
-    param args[0]: ignored
 
     return: the results of the sigmoid function
     '''

@@ -1,10 +1,8 @@
 import numpy as np
-#from ActivationFunctions import ActivationFunctions
 import ActivationFunctions
 import math
-from ABCNeuron import ABCNeuron
 
-class HiddenNeuron(ABCNeuron):
+class HiddenNeuron():
     '''
     Implementation of an hidden neuron composing the NN
     
@@ -17,27 +15,27 @@ class HiddenNeuron(ABCNeuron):
     predecessors : list of neurons
         list of neurons sending their outputs in input to this neuron
     n_predecessors: int
-        number of units linked as predecessors to this neuron
+        number of neurons in self.precedessors
     successors : list of neurons
         list of neurons receiving this neuron's outputs
     n_successors: int
-        number of units linked as successors to this neuron
+        number of neurons in self.successors
     w : array of float
         weights vector
     f : callable
         activation function
     f_parameters : list of float
-        the list for the additional (optional) parameters of the activation function
+        list of additional (optional) args of self.f
     net : float
         inner product between the weight vector and the unit's input at a given iteration
     steps : int
-        number of learning steps (weight update) undergone by the neuron
+        number of epochs undergone by the neuron in the training
     last_predict : float
         output of the neuron (instance variable exploited for predictions out of training)
     partial_weight_update : array of float
         the partial sum (on the minibatch) that will compose the DeltaW weight update value
     old_weight_update : array of float
-        the old weight update value DeltaW
+        the old weight update value DeltaWs
     partial_successors_weighted_errors : float
         the partial sum of successors' errors values weighted by the weight of the link bethween the two units
 
@@ -48,14 +46,10 @@ class HiddenNeuron(ABCNeuron):
         Neuron initialisation
         
         param index: the index of the neuron in the NN
-        param n_input: the number of inputs receivable by the Neuron
         param activation_fun: the Neuron's actviation function
-        param rand_range_min: minimum value for random weights initialisation range
-        param rand_range_max: maximum value for random weights initialisation range
-        param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
         param args: additional (optional) parameters of the activation function
 
-        :return: -
+        return: -
         '''
         self.index = index
         self.type = 'hidden'
@@ -75,44 +69,39 @@ class HiddenNeuron(ABCNeuron):
         self.old_weight_update = np.array([]) # the old weight update value DeltaW
         self.partial_successors_weighted_errors = 0.0 # the partial sum of successors' errors values weighted by the weight of the link bethween the two units
         
-        
         self.exponentially_weighted_infinity_norm = 1 # variable used in for the adamax weight update
+        # inizialized to zero to prevent bad behaviors when combinated with the ReLU (zero derivate)
         
         
-        # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
-        # the None value can help in preventing error, also resetting the variable can help in this sense
+        # the creation of the variables is not necessary, but can help in preventing error, 
+        # also resetting the variable can help in this sense
     
-    def add_nesterov_momentum(self, alpha_momentum:float = 0.0):
-        '''
-        Updates the weight vector (w) of the Neuron with Nesterov's Momentum
-        this update should be done before the next minibatch learning iteration
-        
-        :param alpha_momentum: Nertov's Momentum Hyperparameter
-        :return: -
-        '''
-        
-        self.w = self.w + alpha_momentum*self.old_weight_update
-      
     def increase_steps(self):
+        '''
+        Increase by one self.step
+
+        return: -
+        '''
         self.steps += 1 
        
     def update_weights(self, learning_rate:float = 0.01, lr_decay_tau:int = 0, 
                        eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, 
                        nesterov_momentum:bool = False):
         '''
-        Updates the weight vector (w) of the Neuron
+        Updates the weight vector (w) of the Neuron using, if active, nesterov momentum, standard momentum
+        tikhonov regularization and learning rate decay
         
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
-        param eta_tau: Eta hyperparameter at iteration tau if the learning rate decay procedure is adopted
+        param lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
+        param eta_tau: learning rate after iteration tau if lr_decay_tau > 0, before is used to 
+                        make the learnig rate decay
         param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         param alpha_momentum: Momentum Hyperparameter
 
         return: -
         '''
         # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
-        # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
-        # self.steps += 1
+        # so to slow the intensities of weights update as the algorithm proceeds
         eta = learning_rate
         if self.steps < lr_decay_tau:
             alpha = self.steps/lr_decay_tau
@@ -120,7 +109,7 @@ class HiddenNeuron(ABCNeuron):
         elif lr_decay_tau > 0:
             eta = eta_tau
             
-        # here is the final gradient multiplied by the learning rate
+        # here the final gradient is multiplied by the learning rate
         weight_update = (eta * self.partial_weight_update)
         
         # if nesterov momentum is exploited, we must apply the weight update on the original weight vector
@@ -134,7 +123,7 @@ class HiddenNeuron(ABCNeuron):
         # here we add the momentum influence on the final weight update
         weight_update = weight_update + (self.old_weight_update * alpha_momentum)
 
-        
+        # weight update
         self.w += weight_update
         
         # if nesterov momentum is exploited, we add now the momentum to calculate the right gradient
@@ -145,12 +134,15 @@ class HiddenNeuron(ABCNeuron):
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         self.partial_successors_weighted_errors = 0.0
         
+        # a fail fast approach
         if sum(np.isinf(self.w)): raise Exception('Execution Failed')
      
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
                               lambda_tikhonov:float = 0.0):
         '''
-        Updates the weight vector (w) of the Neuron using Adamax Algorithm
+        Updates the weight vector (w) of the Neuron using Adamax
+        
+        is a combination of decreasing learning rate, 
         
         param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
         param exp_decay_rates_1: Exponential decay rates for the momentum

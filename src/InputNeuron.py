@@ -1,10 +1,4 @@
-
-#from ActivationFunctions import ActivationFunctions
-import ActivationFunctions
-import numpy as np
-from ABCNeuron import ABCNeuron
-
-class InputNeuron(ABCNeuron):
+class InputNeuron():
     '''
     Implementation of an input neuron composing the NN
     

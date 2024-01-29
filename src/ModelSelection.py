@@ -146,7 +146,7 @@ class ModelSelection:
         'lambda_tikhonov' : 0.0,
         
         'learning_rate' : 0.1,
-        'alpha_momentum' : 0.5,
+        'alpha_momentum' : 0.0,
         'lr_decay_tau' : 0,
         'eta_tau' : 0.01,
         'nesterov' : False,
@@ -158,9 +158,9 @@ class ModelSelection:
         
         'batch_size' : 1,
         'min_epochs' : 0,
-        'max_epochs' : 100,
-        'patience' : 10,
-        'error_increase_tolerance' : 0.0001,
+        'max_epochs' : 512,
+        'patience' : 5,
+        'error_increase_tolerance' : math.inf,
         'retraing_es_error': -1,
 
         'metrics':[ErrorFunctions.mean_squared_error, ],      

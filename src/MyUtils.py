@@ -14,7 +14,7 @@ from ActivationFunctions import *
 from NeuralNetwork import *
 
 
-RANDOM_STATE = 69
+RANDOM_STATE = 87654
 COLUMNS_ORDER = ['topology', 'stats',
  'batch_size',
  'min_epochs',
@@ -42,42 +42,40 @@ COLUMNS_ORDER = ['topology', 'stats',
 
 # -- TRAIN -- 
 
-def train_from_index(df, tr_set, val_set, index, topologies_dict):
+def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=False):
     default_values =  {
-        'training_set': None, 
-        'validation_set': None,
-        'metrics':[ErrorFunctions.mean_squared_error, ErrorFunctions.mean_euclidean_error],      
-        'topology': None,
-        
-        'range_min' : -0.75,
-        'range_max' : 0.75,
-        'fan_in' : True,
-        'random_state' : None,
+            'range_min' : -0.75,
+            'range_max' : 0.75,
+            'fan_in' : True,
+            'random_state' : None,
 
-        'lambda_tikhonov' : 0.00001,
-        
-        'learning_rate' : 0.1,
-        'alpha_momentum' : 0.5,
-        'lr_decay_tau' : 250,
-        #'eta_tau' : 0.01,
-        'nesterov' : False,
-        
-        'adamax': False,
-        'adamax_learning_rate': 0.002,
-        'exp_decay_rate_1':0.9,
-        'exp_decay_rate_2':0.999,
-        
-        'batch_size' : 5,
-        'min_epochs' : 25,
-        'max_epochs' : 500,
-        'patience' : 5,
-        'error_increase_tolerance' : 0.0001,
-        'retraing_es_error': -1,
-        
-        'collect_data':True, 
-        'collect_data_batch':False, 
-        'verbose':True,
-        }
+            'lambda_tikhonov' : 0.0,
+            
+            'learning_rate' : 0.1,
+            'alpha_momentum' : 0.0,
+            'lr_decay_tau' : 0,
+            #'eta_tau' : 0.01,
+            'nesterov' : False,
+            
+            'adamax': False,
+            'adamax_learning_rate': 0.002,
+            'exp_decay_rate_1':0.9,
+            'exp_decay_rate_2':0.999,
+            
+            'batch_size' : 1,
+            'min_epochs' : 0,
+            'max_epochs' : 512,
+            'patience' : 5,
+            'error_increase_tolerance' : math.inf,
+            'retraing_es_error': -1,
+
+            'metrics':[ErrorFunctions.mean_squared_error, ErrorFunctions.mean_euclidean_error],      
+            'topology': {}, # must be inizialized
+
+            'collect_data':True, 
+            'collect_data_batch':False, 
+            'verbose':True
+            }
     
     for i in df.columns:
         if i in default_values:
@@ -92,7 +90,8 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict):
     default_values['training_set'] = tr_set
     default_values['validation_set'] = val_set
     
-    default_values['retraing_es_error'] = df.iloc[index]['mean_best_validation_training_error']
+    if early_stop:
+        default_values['retraing_es_error'] = df.iloc[index]['mean_best_validation_training_error']
     
     
     train_args = [default_values[key] for key in NeuralNetwork.train_input] 

@@ -54,6 +54,17 @@ class InputNeuron():
         self.n_successors += 1
         neuron.add_predecessor(self)
 
+    def extend_successors(self, neurons:list):
+        '''
+        Extends the list of the Neuron's successors and
+        update the predecessors' list of the successors neurons with the current neuron
+        
+        param neurons: the list of Neurons to add to the list of successors
+        return: -
+        '''
+        self.successors.extend(neurons)
+        for successor in neurons:
+            successor.add_predecessor(self)
 
     
             

@@ -69,6 +69,9 @@ class OutputNeuron(ABCNeuron):
         # the creation of the variable is not necessary because can be created in any moment, just having the istance of the object but
         # the None value can help in preventing error, also resetting the variable can help in this sense
 
+    def increase_steps(self):
+        self.steps += 1
+        
     def update_weights(self, learning_rate:float = 0.01, lr_decay_tau:int = 0, 
                        eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, nesterov_momentum:bool = False):
         '''
@@ -84,7 +87,7 @@ class OutputNeuron(ABCNeuron):
         '''
         # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
         # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
-        self.steps += 1
+        #self.steps += 1
         eta = learning_rate
         if self.steps < lr_decay_tau:
             alpha = self.steps/lr_decay_tau

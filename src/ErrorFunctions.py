@@ -7,10 +7,10 @@ def mean_euclidean_error(outputs:numpy.ndarray, targets:numpy.ndarray):
     '''
     Calculates the Mean Euclidean Error for a given learning set of patterns
     
-    :param outputs: the predicted NN's outputs
-    :param targets: the actual targets
+    param outputs: the predicted NN's outputs
+    param targets: the actual targets
 
-    :return: the MEE value    
+    return: the MEE value    
     '''
 
     sum = 0
@@ -23,11 +23,30 @@ def mean_squared_error(outputs:numpy.ndarray, targets:numpy.ndarray):
     '''
     Calculates the Mean Squared Error for a given learning set of patterns
     
-    :param outputs: the predicted NN's outputs
-    :param targets: the actual targets
-    :param root: if True returns MSE, if False returns RMSE
+    param outputs: the predicted NN's outputs
+    param targets: the actual targets
+    param root: if True returns MSE, if False returns RMSE
 
-    :return: the MSE value (or RMSE value)
+    return: the MSE value (or RMSE value)
+    '''
+
+    error = numpy.mean(numpy.sum((targets-outputs)**2, axis=1))
+    if numpy.isnan(error):
+        print("targets:", targets)
+        print("outs:", outputs)
+
+    return error
+
+def accuracy(outputs:numpy.ndarray, targets:numpy.ndarray):
+    '''
+    Calculates the accuracy for a given learning set of patterns, computed as:
+        Accuracy = (TP + TN) / (TP + TN + FP + FN)
+    
+    param outputs: the predicted NN's outputs
+    param targets: the actual targets
+    param root: if True returns MSE, if False returns RMSE
+
+    return: the MSE value (or RMSE value)
     '''
 
     error = numpy.mean(numpy.sum((targets-outputs)**2, axis=1))

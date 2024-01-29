@@ -15,7 +15,93 @@ from NeuralNetwork import *
 
 
 RANDOM_STATE = 69
+COLUMNS_ORDER = ['topology', 'stats',
+ 'batch_size',
+ 'min_epochs',
+ 'max_epochs',
+ 'patience',
+ 'error_increase_tolerance',
+ 'lambda_tikhonov',
+ 
+ 'learning_rate',
+ 'alpha_momentum',
+ 'lr_decay_tau',
+ 
+ 'adamax',
+ 'adamax_learning_rate',
+ 'exp_decay_rate_1',
+ 'exp_decay_rate_2',
+ 
+ 'mean_mean_euclidean_error',
+ 'mean_mean_squared_error',
+ 'var_mean_euclidean_error',
+ 'var_mean_squared_error',
+ 'mean_best_validation_training_error']
 
+# -- TRAIN -- 
+
+def train_from_index(df, tr_set, val_set, index, topologies_dict):
+    default_values =  {
+        'training_set': None, 
+        'validation_set': None,
+        'metrics':[ErrorFunctions.mean_squared_error, ErrorFunctions.mean_euclidean_error],      
+        'topology': None,
+        
+        'range_min' : -0.75,
+        'range_max' : 0.75,
+        'fan_in' : True,
+        'random_state' : None,
+
+        'lambda_tikhonov' : 0.00001,
+        
+        'learning_rate' : 0.1,
+        'alpha_momentum' : 0.5,
+        'lr_decay_tau' : 250,
+        #'eta_tau' : 0.01,
+        'nesterov' : False,
+        
+        'adamax': False,
+        'adamax_learning_rate': 0.002,
+        'exp_decay_rate_1':0.9,
+        'exp_decay_rate_2':0.999,
+        
+        'batch_size' : 5,
+        'min_epochs' : 25,
+        'max_epochs' : 500,
+        'patience' : 5,
+        'error_increase_tolerance' : 0.0001,
+        'retraing_es_error': -1,
+        
+        'collect_data':True, 
+        'collect_data_batch':False, 
+        'verbose':True,
+        }
+    
+    for i in df.columns:
+        if i in default_values:
+            default_values[i] = df.iloc[index][i]
+    
+    # set critical values
+    default_values['learning_rate'] = default_values['learning_rate'] / default_values['batch_size']
+    default_values['adamax_learning_rate'] = default_values['adamax_learning_rate'] / default_values['batch_size']
+    default_values['eta_tau'] = default_values['learning_rate']/100 # eta tau more or less 1% of eta_0
+    default_values['lr_decay_tau'] = default_values['lr_decay_tau'] * (len(data_set)/default_values['batch_size'])
+    default_values['topology'] = topologies_dict[df.iloc[index]['topology']]
+    default_values['training_set'] = tr_set
+    default_values['validation_set'] = val_set
+    
+    default_values['retraing_es_error'] = df.iloc[index]['mean_best_validation_training_error']
+    
+    
+    train_args = [default_values[key] for key in NeuralNetwork.train_input] 
+    
+    # create a new model
+    NN = NeuralNetwork(default_values['topology'], default_values['range_min'], default_values['range_max'], default_values['fan_in'], default_values['random_state'])
+    # train the model
+    stats = NN.train(*train_args)
+    return [NN, stats]
+    
+    
 # -- PLOT --
 def multy_plot(datas, labels, title=None, scale='linear', ax=None):
     x = np.arange(0, len(datas[0])).tolist()

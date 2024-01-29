@@ -47,33 +47,14 @@ def accuracy(outputs:np.ndarray, targets:np.ndarray):
 
     return: the accuracy value
     '''
+    N = targets.shape[0]
     if outputs.shape[1] > 1:
         raise Exception('only 1-dimension array are allowed')
     outputs = outputs.flatten()
     targets = targets.flatten()
-    N = targets.shape[0]
     predictions = np.array([1 if x > 0.5 else 0 for x in outputs])
     
     ret = sum((targets) == predictions) / N
-    return ret
-
-def f1_score(outputs:np.ndarray, targets:np.ndarray):
-    '''
-    Calculates the accuracy for a given learning set of patterns, computed as:
-        F1_SCORE = (2 * TP) / (2 * TP + FN + FP)
-    
-    param outputs: the predicted NN's outputs, only 1 dimension array are allowed
-    param targets: the actual targets
-
-    return: the accuracy value
-    '''
-    if outputs.shape[1] > 1:
-        raise Exception('only 1-dimension array are allowed')
-    outputs = outputs.flatten()
-    targets = targets.flatten()
-    predictions = np.array([1 if x > 0.5 else 0 for x in outputs])
-    
-    ret = skm.f1_score(targets, predictions, average='macro')
     return ret 
 
 if __name__ == '__main__':

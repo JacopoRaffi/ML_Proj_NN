@@ -115,7 +115,6 @@ class ModelSelection:
         stats['variance_metrics'] = list(np.var(val_errors, axis=0))
         stats['mean_best_validation_training_error'] = np.mean(tr_errors)
 
-        print(stats)
         return stats
 
     def __init__(self, cv_backup:str):

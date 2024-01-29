@@ -105,16 +105,21 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict):
     
     
 # -- PLOT --
-def multy_plot(datas, labels, title=None, scale='linear', ax=None):
+def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, style=False):
     x = np.arange(0, len(datas[0])).tolist()
 
+    styles = ['-.', '-']
     if ax != None: plt.sca(ax=ax)
-    for i, el in enumerate(datas):
-        plt.plot(x, el, label=labels[i])
-
+    if style:
+        for i, el in enumerate(datas):
+            plt.plot(x, el, label=labels[i], linestyle=styles[i])
+    else:
+        for i, el in enumerate(datas):
+            plt.plot(x, el, label=labels[i])
     plt.title(title)
     plt.grid()
-    plt.legend()
+    if legend:
+        plt.legend()
     plt.yscale(scale)
     if ax == None: plt.show()
 

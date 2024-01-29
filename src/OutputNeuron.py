@@ -121,7 +121,7 @@ class OutputNeuron():
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         
         # a fail fast approach
-        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed, w:' + str(self.w))
         
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
                               lambda_tikhonov:float = 0.00001):
@@ -148,7 +148,7 @@ class OutputNeuron():
         # momentum influence
         dummy_1 = momentum/self.exponentially_weighted_infinity_norm
         # learning rate decay influence
-        dummy_2 = (1 - math.pow(exp_decay_rates_1, self.steps))
+        dummy_2 = (1 - math.pow(exp_decay_rates_1, (self.steps + 1)))
         # weight update
         weight_update = -(learning_rate/dummy_2)*dummy_1
         
@@ -165,7 +165,7 @@ class OutputNeuron():
         self.partial_weight_update = np.zeros(self.n_predecessors + 1)
         
         # a fail fast approach
-        if sum(np.isinf(self.w)): raise Exception('Execution Failed')
+        if sum(np.isinf(self.w)): raise Exception('Execution Failed, w:' + str(self.w))
         
     def initialise_weights(self, rand_range_min:float, rand_range_max:float, fan_in:bool, random_generator:np.random.Generator):
         '''

@@ -92,6 +92,9 @@ class HiddenNeuron(ABCNeuron):
         '''
         
         self.w = self.w + alpha_momentum*self.old_weight_update
+      
+    def increase_steps(self):
+        self.steps += 1 
        
     def update_weights(self, learning_rate:float = 0.01, lr_decay_tau:int = 0, 
                        eta_tau:float = 0.0, lambda_tikhonov:float = 0.0, alpha_momentum:float = 0.0, 
@@ -109,7 +112,7 @@ class HiddenNeuron(ABCNeuron):
         '''
         # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
         # so to slow the intensities of weights update as the algorithm proceeds (recommended in minibatch)
-        self.steps += 1
+        # self.steps += 1
         eta = learning_rate
         if self.steps < lr_decay_tau:
             alpha = self.steps/lr_decay_tau

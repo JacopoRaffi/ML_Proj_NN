@@ -510,6 +510,8 @@ class NeuralNetwork:
 
                 batch_index += batch_size
                 if batch_index >= training_set_length:
+                    for neuron in self.neurons[self.input_size:]:
+                        neuron.increase_steps()
                     if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
                         exhausting_patience -= 1
                     else:

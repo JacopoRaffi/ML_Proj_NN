@@ -322,7 +322,6 @@ class ModelSelection:
             # train the model
             grid_val['learning_rate'] = grid_val['learning_rate'] / grid_val['batch_size']
             grid_val['adamax_learning_rate'] = grid_val['adamax_learning_rate'] / grid_val['batch_size']
-            # grid_val['lr_decay_tau'] = grid_val['lr_decay_tau'] * (len(data_set)/grid_val['batch_size'])
             grid_val['eta_tau'] = grid_val['learning_rate']/100 # eta tau more or less 1% of eta_0
             args_train = [grid_val[key] for key in self.train_arg_names] 
             if verbose: print("Training a new model : ", args_train)
@@ -394,103 +393,6 @@ class ModelSelection:
                                                     k_folds, 
                                                     os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv')),
                                               daemon=True)
-            proc_pool.append(process)
-            process.start()
-            
-            remainder -= 1
-           
-        for process in proc_pool: # join all the terminated processes
-            process.join()
-
-        self.__merge_csv_file(self.backup)
-    
-    def __process_task_trainHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:list, 
-                        hyperparameters_name:list, backup:str = None, verbose:bool = True):
-        
-        '''
-        Train the model with the given configuration of hyperparameters
-
-        param training_set: training set to be used for hold out validation
-        param validation_set: validation set to be used for hold out validation
-        param hyperparameters: list of hyperparameters' configurations to be used for validation
-        param hyperparameters_name: list of hyperparameters' names
-        param: backup: backup file
-        param: verbose: verbosity of the algorithm
-
-        return: -
-        '''
-
-        if os.path.isfile(backup):
-            back_up = open(backup, 'a')
-            writer = csv.writer(back_up)
-        else:
-            back_up = open(backup, 'a+')
-            writer = csv.writer(back_up)
-            writer.writerow(hyperparameters_name + ['stats', 'metrics_names', 'errors'])
-
-        # for every configuration create a new clean model and train it
-        for configuration in hyperparameters:
-            grid_val = self.default_values.copy()
-            for i, key in enumerate(hyperparameters_name): grid_val[key] = configuration[i]
-
-            # create a new model
-            metrics_name = [m.__name__ for m in grid_val['metrics']]
-            grid_val['topology'] = ast.literal_eval(grid_val['topology'])
-            args_init = [grid_val[key] for key in self.inzialization_arg_names]
-            nn = NeuralNetwork(*args_init)
-            # train the model
-            args_train = [grid_val[key] for key in self.train_arg_names]
-            
-
-            stats = nn.train(training_set, validation_set, *args_train)
-            metrics_error = [stats['validation_' + mes.__name__][-1] for mes in grid_val['metrics']]
-            writer.writerow(list(configuration) + [stats, metrics_name, ])
-            back_up.flush()
-        
-        back_up.close()
-
-    def grid_searchHO(self, training_set:np.ndarray, validation_set:np.ndarray, hyperparameters:dict, 
-                      n_proc:int = 1, recovery:bool = False):
-        '''
-        Implementation of the grid search algorithm using hold out validation
-
-        param training_set: training set to be used in the grid search
-        param validation_set: validation set to be used in the grid search
-        param hyperparameters: dictionary with the hyperparameters to be tested
-        param topology: topology of the neural network
-        param n_proc: number of processes to be used in the grid search
-        param topology_name: name of the network topology
-
-        return: the best hyperparameters' configuration
-        
-        '''
-        
-        hyperparameters = dict(sorted(hyperparameters.items()))
-        configurations, names = self.__get_configurations(hyperparameters, recovery)
-
-        if n_proc == 1: # sequential execution
-            self.__process_task_trainHO(training_set, validation_set, configurations, names, self.backup)
-            return
-
-        remainder = len(configurations) % n_proc
-        single_conf_size = int(len(configurations) / n_proc)
-        start = end = 0
-        j = 0
-        proc_pool = []
-        
-        partial_data_dir = Path(self.partials_backup_path).absolute()
-        if not os.path.exists(partial_data_dir):
-            os.makedirs(partial_data_dir)
-
-        for i in range(n_proc): # distribute equally the workload among the processes
-            start = end
-            if remainder > 0:
-                end += single_conf_size + 1
-            else:
-                end += single_conf_size
-            j = i+1
-            process = multiprocessing.Process(target=self.__process_task_trainHO, args=(training_set, validation_set, configurations[start:end],
-                                                                                 names, os.path.join(partial_data_dir, f''+ self.partials_backup_prefix +f'{j}.csv'), ))
             proc_pool.append(process)
             process.start()
             

@@ -38,6 +38,7 @@ def identity(input, *args):
     '''
     return input
 
+# TODO: aggiungere slope!!!
 def sigmoid(input, slope, *args):
     '''
     The sigmoidal logistic function
@@ -47,7 +48,7 @@ def sigmoid(input, slope, *args):
     
     return: the results of the sigmoid function
     '''
-    ret = 1/(1 + math.exp(-(input*slope)))
+    ret = 1/(1 + math.exp(-(input)))
 
     return ret
 
@@ -61,7 +62,7 @@ def tanh(input, slope, *args):
     return: the results of the sigmoid function
     '''
 
-    return numpy.tanh((input*slope)/2)
+    return numpy.tanh((input)/2)
 
 def softplus(input, *args):
     '''

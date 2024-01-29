@@ -130,7 +130,6 @@ class OutputNeuron():
         
         return: -
         '''
-        self.steps += 1
         
         # our gradient is already multiplyed by -1 !!!!
         gradient = self.partial_weight_update * -1

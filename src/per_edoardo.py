@@ -29,7 +29,7 @@ sigmoid_l1 = create_stratified_topology([INPUT,hidden_len,OUTPUT],
                                       [[None,[]]]*INPUT + [[hidden_fun, [1]]]*hidden_len + [[output_fun, []]]*OUTPUT)
 
 
-MS = ModelSelection('../data/gs_data/1l_sigmoid_5_fg_edo.csv')
+MS = ModelSelection('../data/gs_data/1l_sigmoid_5_fg_gauss.csv')
 MS.default_values['metrics'] = [ErrorFunctions.mean_euclidean_error, ErrorFunctions.mean_squared_error]
 hyperparam_grid = {
     'lambda_tikhonov':[0.000000001, 0.00000001, 0.0000001],
@@ -37,7 +37,7 @@ hyperparam_grid = {
     'min_epochs': [150],
     'max_epochs':[500],
     
-    'learning_rate':[0.07, 0.09],
+    'learning_rate':[0.09],
     'lr_decay_tau':[145, 165, 185, 200],
     'alpha_momentum':[0.85, 0.92, 0.95],
     

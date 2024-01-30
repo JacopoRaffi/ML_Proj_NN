@@ -112,25 +112,6 @@ def softplus(input, *args):
     # a safe softplus for large input
     return math.log1p(math.exp(-abs(input))) + max(input, 0)
 
-def gaussian(input, slope, *args):
-    '''
-    The gaussian function
-    
-    Parameters
-    ----------
-    input: float
-        the input of the function
-    slope: float
-        the slope parameter of the gaussian function
-
-    Returns
-    -------
-    return: float
-        the results of the sigmoid function
-    '''
-
-    return math.exp(-slope*(input**2))
-
 def ReLU(input, *args):
     '''
     The ReLU function

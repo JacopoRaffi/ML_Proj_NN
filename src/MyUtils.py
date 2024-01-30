@@ -133,6 +133,7 @@ def train_from_index(df:pd.DataFrame, tr_set:np.ndarray, val_set:np.ndarray, ind
 # -- PLOT --
 def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, style=False, font_size=14):
     '''
+    Display a multy scatter plot using the given data ad parameters, and using matplotlib   
     '''
     x = np.arange(0, len(datas[0])).tolist()
     plt.rcParams.update({'font.size': font_size})
@@ -153,6 +154,9 @@ def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, 
     if ax == None: plt.show()
 
 def multy_plot_3d(x, y, z, label, title):
+    '''
+    Display a 3D scatter plot using the given data ad parameters, and using matplotlib   
+    '''
     print('Tot points:', len(x[0]))
     color_list = list(mcolors.TABLEAU_COLORS)
     fig = plt.figure(figsize=plt.figaspect(0.5))
@@ -170,6 +174,9 @@ def multy_plot_3d(x, y, z, label, title):
     return fig
 
 def interactive_3d_plot(dataframe, x_col, y_col, z_col, color_col, size_col=None, max_size=None, symbol_col=None):
+    '''
+    Display a 3D scatter plot using the given data ad parameters, and using Plotly Express
+    '''
     print('Tot points:', len(dataframe))
     fig = px.scatter_3d(dataframe, x=x_col, y=y_col, z=z_col,
                 color=color_col, opacity=0.7, size=size_col, size_max=max_size, symbol=symbol_col)
@@ -182,6 +189,9 @@ def interactive_3d_plot(dataframe, x_col, y_col, z_col, color_col, size_col=None
 
 # -- create data structures --
 def create_dataset(n_items, n_input, input_range, output_functions, seed):
+    '''
+    Create a dummy dataset for early training tests given the inputs
+    '''
     random.seed(seed)
 
     n_output = len(output_functions)
@@ -200,7 +210,10 @@ def create_dataset(n_items, n_input, input_range, output_functions, seed):
 
 
 def create_stratified_topology(layers, act_fun_list = None):
-
+    '''
+    Create a stratified topology from the number of layers and the sctivation functions list,
+    used to describe a neural network structure
+    '''
     orig_layers_len = len(layers)
     if act_fun_list == None:
         if orig_layers_len > 2:
@@ -232,7 +245,9 @@ def create_stratified_topology(layers, act_fun_list = None):
     return top
 
 def monk_to_csv():
-    
+    '''
+    used to convert the monk datasets in csv
+    '''
     for j in range(1,4):
         datas_tr = {'input_1':[],
                 'input_2':[],

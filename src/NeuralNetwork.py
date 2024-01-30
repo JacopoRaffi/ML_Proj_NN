@@ -89,7 +89,7 @@ class NeuralNetwork:
         '''
         Simple function to vsualize a topology
         
-        param topology: dict
+        topology: dict
             the topology to be displayed
             
                 eg: {0: ['input_0', None, [], [10, 11, 12]], 
@@ -152,7 +152,7 @@ class NeuralNetwork:
         '''
         Function used to restore a NeuralNetwork state (the weights) from a json string
         
-        param json_str: str
+        json_str: str
             the rapresentation of the state
             
         return: NeuralNetwork
@@ -205,7 +205,7 @@ class NeuralNetwork:
         '''
         Map the function name to the corresponding callable variable
         
-        param name: str
+        name: str
             the name of the function to map
 
         return: callable
@@ -236,7 +236,7 @@ class NeuralNetwork:
         '''
         Builds a Neural Network from the topology
         
-        param topology: dict
+        topology: dict
             the graph structure described by a dictionary
 
         return: -
@@ -292,11 +292,11 @@ class NeuralNetwork:
         '''
         Recursive function that builds the (inverse-)topological order and update the ordered list self.neurons
         
-        param index: int
+        index: int
             the index of the neuron to visit
-        param visited: list
+        visited: list
             the list of visited neurons
-        param ordered: list
+        ordered: list
             the list of ordered neurons (inverse topological order)
 
         return: -
@@ -334,7 +334,7 @@ class NeuralNetwork:
         '''
         Neural Network inizialization
         
-        param topology: dict
+        topology: dict
             the graph structure is described by a dictionary that has a key for each unit in the network, 
             and for each key contains a list of unit type (input, hidden, output), activation function, parameters of activation functions
             and list of nodes where an outgoing arc terminates.
@@ -347,13 +347,13 @@ class NeuralNetwork:
                  '5': ['output', 'identity', [fun_args...], []],
                  '6': ['output', 'identity', [fun_args...], []]}
 
-        param rand_range_min: float
+        rand_range_min: float
             minimum value for random weights initialisation range
-        param rand_range_max: float
+        rand_range_max: float
             maximum value for random weights initialisation range
-        param fan_in: bool
+        fan_in: bool
             if the weights'initialisation should also consider the Neuron's fan-in
-        param random_state: int
+        random_state: int
             the seed to create the radom generator, use this to make replicable behavior
         
         return: -
@@ -398,7 +398,7 @@ class NeuralNetwork:
         '''
         Compute the output of the network given an input vector
         
-        param input: np.array
+        input: np.array
             the input vector for the model
         
         return: np.array
@@ -425,7 +425,7 @@ class NeuralNetwork:
         '''
         Compute the output of the network given multiples input vectors
         
-        param input: np.array
+        input: np.array
             the inputs vector for the model
         
         return: np.array
@@ -442,7 +442,7 @@ class NeuralNetwork:
         Compute the Backpropagation training algorithm on the NN for a single training pattern.
         Is called strictly after the self.predict, when every neuron has stored the last predict correctly.
         
-        param target: np.array
+        target: np.array
             the target vector for the Backprogation iteration
         return: -
         '''

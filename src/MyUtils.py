@@ -54,7 +54,6 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=Fal
             'learning_rate' : 0.1,
             'alpha_momentum' : 0.0,
             'lr_decay_tau' : 0,
-            #'eta_tau' : 0.01,
             'nesterov' : False,
             
             'adamax': False,
@@ -67,7 +66,7 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=Fal
             'max_epochs' : 512,
             'patience' : 5,
             'error_increase_tolerance' : math.inf,
-            'retraing_es_error': -1,
+            'retrainig_es_error': -1,
 
             'metrics':[ErrorFunctions.mean_squared_error, ErrorFunctions.mean_euclidean_error],      
             'topology': {}, # must be inizialized

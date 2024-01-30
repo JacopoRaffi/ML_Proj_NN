@@ -166,7 +166,7 @@ class ModelSelection:
         'max_epochs' : 512,
         'patience' : 5,
         'error_increase_tolerance' : math.inf,
-        'retraing_es_error': -1,
+        'retrainig_es_error': -1,
 
         'metrics':[ErrorFunctions.mean_squared_error, ],      
         'topology': {}, # must be inizialized

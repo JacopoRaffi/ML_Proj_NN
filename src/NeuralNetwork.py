@@ -32,7 +32,7 @@ class NeuralNetwork:
         'training_set_len',
         'minibatch_size',
         'max_epochs',
-        'retraing_es_error',
+        'retrainig_es_error',
         'error_increase_tolerance',
         'patience',
         'min_epochs',
@@ -61,7 +61,7 @@ class NeuralNetwork:
               'batch_size', 
               'max_epochs', 
               'min_epochs',
-              'retraing_es_error',
+              'retrainig_es_error',
               'patience', 
               'error_increase_tolerance', 
              
@@ -461,7 +461,7 @@ class NeuralNetwork:
               batch_size:int = 1, 
               max_epochs:int = 512, 
               min_epochs: int = 0,
-              retraing_es_error: float = -1.0, # off
+              retrainig_es_error: float = -1.0, # off
               patience: int = 5, 
               error_increase_tolerance:float = 0.0001, 
             
@@ -492,7 +492,8 @@ class NeuralNetwork:
         validation_set: np.array
             set of samples (pattern-target) for supervised learning that is used for valdation purposes:
                 -> computing validation error in the training process
-                -> computing best_validation_training_error, the training error when the validation error in min during training
+                -> computing best_validation_training_error, the training error when the validation 
+                    error in min during training
                 -> stopping the training if the network reached convergence
         batch_size: int
             parameter which determines the amount of training samples consumed in each iteration of the algorithm
@@ -504,7 +505,7 @@ class NeuralNetwork:
         min_epochs: int
             the minimum number of epochs on which the algorithm will iterate, 
             is used to decide when to start using the patience
-        retraing_es_error: float
+        retrainig_es_error: float
             the network stops the training when the error on training set falls below this value, 
             used in retraining
         patience: int
@@ -515,34 +516,50 @@ class NeuralNetwork:
             Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         
         adamax: boool
-            If True the adamax optimizer is used instead of the standard one so learnig_rate, lr_decay-tau, eta_tau, alpha_momentum,
+            If True the adamax optimizer is used instead of the standard one so learnig_rate, lr_decay-tau, eta_tau, 
+                alpha_momentum,
             nesterov_momentum are ignored.
             If False the standard optimized is used and adamax_learning_rate, exp_decay_rate_1, exp_decay_rate_2 is ignored.
         adamax_learning_rate: float
-            The learning rate used in update_weights_adamax inside the neurons, the step multiplyed to the gradient and added to the weights at each
-            iteration.
+            The learning rate used in update_weights_adamax inside the neurons, the step multiplyed to the gradient 
+            and added to the weights at each iteration.
         exp_decay_rate_1: float
             The first exponential decay factor used in Adamax optimizer, applied to the momentum and learning rate
         exp_decay_rate_2: float
             The second exponential decay factor used in Adamax optimizer, applied to the infinity norm
-            
+        
         learning_rate: float
-            he learning rate used in update_weights inside the neurons, the step multiplyed to the gradient and added to the weights at each
-            iteration.
-        error_function: a string indicating the error function that the algorithm whould exploit when calculating the error distances between iterations
-            -> "mee": Mean Euclidean Error
-            -> "lms": Least Mean Square
-        error_increase_tolerance: the errors difference (gain) value that the algorithm should consider as sufficiently low in order to stop training 
-        patience: the number of epochs to wait when a "no more significant error decrease" occurs
-        learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        lr_dacay_tau: Number of iterations (tau) if the learning rate decay procedure is adopted
-        eta_tau: Eta hyperparameter at iteration tau if the learning rate decay procedure is adopted
-        alpha_momentum: Momentum Hyperparameter
-
+            The learning rate used in update_weights inside the neurons, the step multiplyed to the gradient and 
+            added to the weights at each iteration.
+        lr_decay_tau: int
+            Parameter that controls the decay of the learning rate in the standard optimizer, after the actual learning
+            epoch is greater then this value the learning rate is fixed at eta_tau
+        eta_tau: float 
+            Parameter that controls the decay of the learning rate in the standard optimizer, after the actual learning
+            epoch is greater then lr_decay_tau the learning rate is fixed at this value
+        alpha_momentum: float
+            The influence of the momentum (previous iteration weights update) in the weights update
+        nesterov: bool
+            If the nesterov momentum technique is used instead of the classical momentum
+            
+        metrics: list
+            The list of callable function used to compute the errors during the training, related to training set and validation set
+        collect_data: bool 
+            If to collect datas at each epoch during training, if True the training is slightly slower
+        collect_data_batch: bool
+            If to collect datas at the end of each batch during traning, if True  the training is severely slowed
+        verbose: bool
+            If to print some information in the standard output during training
+            
         Returns
         -------
-        return: -
-        
+        return: dict
+            All the stats gathered during training.
+            If collect_data is set to False it contains only essential stats and inputs of the training method
+            If collect_data is set to True it contains stats computed at every epochs such as errors, computational time ...
+            If collect_data_batch is set to True it contains also stats computed at every epochs such as the neuron's weights,
+                errors ...
+                
         See Also
         --------
         The neuron's structure and hidden and output neuron's update_weights functions
@@ -571,13 +588,15 @@ class NeuralNetwork:
         batch_index = 0
         if batch_size > training_set_length: batch_size = training_set_length
         
+        retrainig_es = True
+        retrainig_es_tollerance = 0.20
         # initializing the dict where collect stats of the training
         stats = {
             # -- input stats --
             'training_set_len':training_set_length,
             'minibatch_size':batch_size,
             'max_epochs':max_epochs,
-            'retraing_es_error':retraing_es_error,
+            'retrainig_es_error':retrainig_es_error,
             'error_increase_tolerance':error_increase_tolerance,
             'patience':patience,
             'min_epochs':min_epochs,
@@ -631,7 +650,7 @@ class NeuralNetwork:
 
         try:
             # start training cycle
-            while (epochs < max_epochs) and (exhausting_patience > 0) and (training_err > retraing_es_error):
+            while (epochs < max_epochs) and (exhausting_patience > 0) and retrainig_es:
                 # batch
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
                     self.predict(sample[:self.input_size])
@@ -665,6 +684,7 @@ class NeuralNetwork:
                     epochs += 1
                     batch_index = batch_index%training_set_length
 
+                    training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                     if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:
@@ -672,10 +692,12 @@ class NeuralNetwork:
                         else:
                             last_error_increase_percentage = 0
                             
-                            training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                             stats['best_validation_training_error'] = min(stats['best_validation_training_error'], training_err)
                         last_error = new_error
-
+                    
+                    if training_err < retrainig_es_error*(1 + retrainig_es_tollerance):
+                            retrainig_es = False
+                    
                     # stats for every epoch
                     if collect_data:
                         # take training time for the epoch

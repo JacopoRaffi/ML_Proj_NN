@@ -42,11 +42,18 @@ class ModelSelection:
         Compute the Backpropagation training algorithm on the NN for a given data set, estimating the hyperparameter performances
         trough k-fold validation
         
-        param data_set: a set of samples (pattern-target pairs) for supervised learning
-        param k: number of data folds (data splits)
-        param metrics: list of metrics used in the training of the model
-        param model_args: list of arguments given in input when training a the model
+        Parameters
+        ----------
+        data_set: np.ndarray
+            A set of samples (pattern-target pairs) for supervised learning
+        k: int
+            Number of data folds (data splits)
+        metrics: list of callable
+            List of metrics used in the training of the model
+        model_args: list of arguments given in input when training a the model
 
+        Returns
+        -------
         return: a dct containing all the stats accumulated by the model during training, plus mean and variance
                 of the final evaluation metrics computed for every fold
         '''
@@ -125,8 +132,13 @@ class ModelSelection:
         '''
         Constructor of the class
         
-        param cv_backup: file to backup the state of the computations
+        Parameters
+        ----------
+        cv_backup: str
+            File to backup the state of the computations
         
+        Returns
+        -------
         return: -
         ''' 
         # if backup is not good we raise an exeption
@@ -205,8 +217,13 @@ class ModelSelection:
         '''
         Restore model selection's state from a backup folder
 
-        param backup_file: backup file list to be used to restore the state
+        Parameters
+        ----------
+        hyperparameters: list
+            List of hyperparameters
         
+        Returns
+        ------- 
         return: -
         '''
         
@@ -232,9 +249,19 @@ class ModelSelection:
         '''
         Get all the possible configurations of the hyperparameters
 
-        param hyperparameters: dictionary with the hyperparameters to be tested
+        Parameters
+        ----------
+        hyperparameters: dict
+            Dictionary with the hyperparameters to be tested
+        constraints: dict
+            Dictionary that contains the constraints (see grid_search_kfold)
+        recovery: bool
+            If a previous saved state is being recovered
 
-        return: list of all the possible configurations and list of the hyperparameters' names
+        Returns
+        -------
+        return: list
+            List of all the possible configurations and list of the hyperparameters' names
         '''
         # if the istance is starting from a pre-existing backup, not all configuration needs to be tested
         done_configurations = []
@@ -283,9 +310,13 @@ class ModelSelection:
         '''
         Merge the results of the processes in a single file
 
-        param results_file_name: name of the file obtained after the merge
-        param n_proc: number of processes
-
+        Parameters
+        ----------
+        results_file_name: str
+            Name of the file obtained after the merge
+            
+        Returns
+        -------
         return: -
         '''
         
@@ -305,17 +336,30 @@ class ModelSelection:
 
         return results_file_name
 
-    def __process_task_trainKF(self, data_set:np.ndarray, hyperparameters:list, hyperparameters_name:list, 
-                        k_folds:int = 1, backup:str = None):
+    def __process_task_trainKF(self, 
+                               data_set:np.ndarray, 
+                               hyperparameters:list, 
+                               hyperparameters_name:list, 
+                               k_folds:int = 1, 
+                               backup:str = None):
         '''
         Train the model with the given hyperparameters and the number of folds
 
-        param data_set: dataset used for the K-Fold cross validation
-        param hyperparameters: dict of hyperparameters' configurations to be used for validation
-        param hyperparameters_name: list of hyperparameters' names
-        param k_folds: number of folds to be used in the cross validation
-        param backup: backup file to be used to write the results
+        Parameters
+        ----------
+        data_set: np.ndarray 
+            Dataset used for the K-Fold cross validation
+        hyperparameters: dict
+            Dict of hyperparameters' configurations to be used for validation
+        hyperparameters_name: 
+            List of hyperparameters' names
+        k_folds: int
+            number of folds to be used in the cross validation
+        backup: str
+            Backup file to be used to write the results
 
+        Returns
+        -------
         return: -
 
         '''
@@ -376,17 +420,49 @@ class ModelSelection:
 
         back_up.close()
 
-    def grid_searchKF(self, data_set:np.ndarray, hyperparameters:dict = {}, k_folds:int = 2, n_proc:int = 1, recovery:bool = False, constraints:dict = {}, ):
+    def grid_searchKF(self, 
+                      data_set:np.ndarray, 
+                      hyperparameters:dict = {}, 
+                      k_folds:int = 2, 
+                      n_proc:int = 1, 
+                      recovery:bool = False, 
+                      constraints:dict = {}):
         '''
         Implementation of a completely configurable grid search
 
-        param data_set: training + validation to be used in the grid search
-        param hyperparameters: dictionary with the hyperparameters to be tested
-        param k_folds: number of folds to be used in the cross validation
-        param n_proc: number of processes to be used in the grid search
-        param recovery: if to recover a previous computation interrupted before the finish
-        param constraints: constraints to exlude some useless configuration, completely coonfigurable
-
+        Parameters
+        ----------
+        data_set: np.ndarray
+            Training + validation to be used in the grid search
+        hyperparameters: dict
+            Dictionary with the hyperparameters to be tested
+            
+                eg: {'hyp_param_1':[val_1, val_2, val_3, ...], 
+                        'hyp_param_2':[val_1, val_2, ...],         
+                        'hyp_param_3':[val_1, ... ], ... }
+                        
+        k_folds: int
+            Number of folds to be used in the cross validation
+        n_proc: int
+            Number of processes to be used in the grid search
+        recovery: bool
+            If to recover a previous computation interrupted before the finish
+        constraints: dict
+            Dictionary with the constrains to discard useless configuration
+            
+                eg: {'hyp_param_1': (fun_1, 
+                                     ['hyp_param_2', 'hyp_param_3', 'hyp_param_4', ...], 
+                                     ['hyp_param_5', 'hyp_param_6', ...]),
+                     'hyp_param_7': (fun_2,
+                                     ['hyp_param_8', 'hyp_param_9', ...],
+                                     [...]), ... }
+                            
+                fun is a function applied to the values of 'hyp_param_1' and if the result is True then 
+                the hyperparameters inside the first list are set to default values, if False the parameters 
+                inside the second list are set to default values
+        
+        Returns
+        -------
         return: -
         '''
         # the input hyperparameters grid is processed

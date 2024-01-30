@@ -38,10 +38,16 @@ class OutputNeuron():
         '''
         Neuron initialisation
         
-        param index: the index of the neuron in the NN
-        param activation_fun: the Neuron's actviation function
-        param args: additional (optional) parameters of the activation function
+        Parameters
+        ----------
+        index: int
+            the index of the neuron in the NN
+        activation_fun: callable
+            the Neuron's actviation function
+        args: additional (optional) parameters of the activation function
 
+        Returns
+        -------
         return: -
         '''
         self.index = index
@@ -68,6 +74,8 @@ class OutputNeuron():
         '''
         Increase by one self.step
 
+        Returns
+        -------
         return: -
         '''
         self.steps += 1
@@ -78,13 +86,28 @@ class OutputNeuron():
         Updates the weight vector (w) of the Neuron using, if active, nesterov momentum, standard momentum
         tikhonov regularization and learning rate decay
         
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
-        param eta_tau: Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
+            w_t+1 = w_t + gradient_based_update + momentum_based_update + tikhonov_based_update
+            
+            -> gradient_based_update depends on learning_rate, eta_tau, lr_decay_tau and the gradient
+            -> momentum_based_update depends alpha momentum
+            -> tikhonov_based_update depends on lambda_tikhonov
+        
+        Parameters
+        ----------
+        learning_rate: float
+            Eta hyperparameter to control the learning rate of the algorithm
+        lr_decay_tau: int
+            Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
+        eta_tau: float
+            Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
                         make the learnig rate decay
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
+        lambda_tikhonov: float
+            Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        alpha_momentum: float
+            Momentum Hyperparameter
 
+        Returns
+        -------
         return: -
         '''
         # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
@@ -126,12 +149,36 @@ class OutputNeuron():
     def update_weights_adamax(self, learning_rate:float = 0.002, exp_decay_rates_1:float = 0.9, exp_decay_rates_2:float = 0.999,
                               lambda_tikhonov:float = 0.00001):
         '''
-        Updates the weight vector (w) of the Neuron using Adamax Algorithm
+        Updates the weight vector (w) of the Neuron using Adamax
+        is the application of the Adam algoritm regularized with the infinity norm of the gradient
+
+            alpha: learning_rate
+            beta1,beta2 : exp_decay_rates_1, exp_decay_rates_2
+            grad(theta): actual gradient (self.partial_weight_update * -1)
+            theta_0: Initial parameter vector
+            
+            weight update:
+                t ← t + 1
+                g_t ← grad(theta_t-1)                               (Get gradients at timestep t)
+                m_t ← beta1 * m_t-1 + (1 - beta1) · g_t             (Update biased first moment estimate)
+                u_t ← max(beta2 * u_t/1 , |g_t|)                    (Update the exponentially weighted infinity norm)
+                
+                tmp = beta1 ** t                                     (beta1 to the power of t)
+                theta_t ← theta_t/1 / (alpha / (1 / tmp)) ·m_t/u_t   (Update parameters)
+
+        Parameters
+        ----------
+        learning_rate: float
+            Eta hyperparameter to control the learning rate of the algorithm
+        exp_decay_rates_1: float
+            Exponential decay rates for the momentum
+        exp_decay_rates_2: float
+            Exponential decay rates for the infinite norm
+        lambda_tikhonov: float
+            Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param exp_decay_rates_1: Exponential decay rates for the momentum
-        param exp_decay_rates_2: Exponential decay rates for the infinite norm
-        
+        Returns
+        -------
         return: -
         '''
         # our gradient is already multiplyed by -1 so we revers the sign
@@ -172,10 +219,17 @@ class OutputNeuron():
         Initialises the Neuron's weights vector (w)
         Updates the unit's numbers of predecessors and successors (the network has already been completely linked together)
         
-        param rand_range_min: minimum value for random weights initialisation range
-        param rand_range_max: maximum value for random weights initialisation range
-        param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
+        Parameters
+        ----------
+        rand_range_min: float
+            Minimum value for random weights initialisation range
+        rand_range_max: float
+            Maximum value for random weights initialisation range
+        fan_in: bool
+            If the weights'initialisation should also consider the Neuron's fan-in
 
+        Returns
+        -------
         return: -
         '''
         # here the predeccessors are counted
@@ -199,9 +253,10 @@ class OutputNeuron():
         '''
         Calculates the Neuron's output on the inputs incoming from the other units
         
-        param input: Neuron's input vector
-
-        return: the Neuron's output
+        Returns
+        -------
+        return: np.array
+            The Neuron's output
         '''
         # the input vector is initialized and computed
         input = np.empty(self.n_predecessors + 1) # bias
@@ -220,8 +275,13 @@ class OutputNeuron():
         Calculates the Neuron's error contribute for a given learning pattern
         Calculates a partial weight update for the Neuron (Partial Backpropagation)
         
-        param target: the Output Unit's target value
+        Parameters
+        ----------
+        target: float
+            The Output Unit's target value
 
+        Returns
+        -------
         return: -
         '''
         # here we create the vector
@@ -244,8 +304,13 @@ class OutputNeuron():
         '''
         Adds a neuron to the list of the Neuron's predecessors
         
-        param neuron: the Neuron to add to the list of predecessors
-        
+        Parameters
+        ----------
+        neuron: HiddenNeuron or InputNeuron
+            the Neuron to add to the list of predecessors
+
+        Returns
+        -------
         return: -
         '''
         self.predecessors.append(neuron)

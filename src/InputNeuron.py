@@ -20,8 +20,13 @@ class InputNeuron():
         '''
         Neuron initialisation
 
-        param index: the index of the neuron in the NN
+        Parameter
+        ---------
+        index: int
+            the index of the neuron in the NN
 
+        Returns
+        -------
         return: -
         '''
         self.index = index
@@ -35,8 +40,13 @@ class InputNeuron():
         '''
         Calculates the Neuron's output on the inputs incoming from the other units, adding the output in the output_list
         
-        param input: Neuron's input vector
+        Parameter
+        ---------
+        input: float
+            Neuron's input vector
 
+        Returns
+        -------
         return: the Neuron's output
         '''   
         self.last_predict = input
@@ -46,8 +56,13 @@ class InputNeuron():
         Adds a neuron to the list of the Neuron's successors and
         update the predecessors' list of the successor neuron with the current neuron
         
-        param neuron: the Neuron to add to the list of successors
+        Parameters
+        ----------
+        neuron: HiddenNeuron or OutputNeuron
+            the Neuron to add to the list of successors
 
+        Returns
+        -------
         return: -
         '''
         self.successors.append(neuron)
@@ -59,7 +74,13 @@ class InputNeuron():
         Extends the list of the Neuron's successors and
         update the predecessors' list of the successors neurons with the current neuron
         
-        param neurons: the list of Neurons to add to the list of successors
+        Parameters
+        ----------
+        neurons: list of HiddenNeuron or list of OutputNeuronthe 
+            list of Neurons to add to the list of successors
+        
+        Returns
+        -------
         return: -
         '''
         self.successors.extend(neurons)

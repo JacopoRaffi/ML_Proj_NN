@@ -13,6 +13,9 @@ sys.path.append(os.path.abspath('./'))
 from ActivationFunctions import *
 from NeuralNetwork import *
 
+'''
+The collections of useful function used in then project and useful global variables
+'''
 
 RANDOM_STATE = 87654
 COLUMNS_ORDER = ['topology', 'stats',
@@ -42,7 +45,32 @@ COLUMNS_ORDER = ['topology', 'stats',
 
 # -- TRAIN -- 
 
-def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=False):
+def train_from_index(df:pd.DataFrame, tr_set:np.ndarray, val_set:np.ndarray, index:int, topologies_dict:dict, early_stop:bool=False):
+    '''
+    Train a model described in a row of a dataframe in a give index
+    
+    Parameters
+    ----------
+    df: pd.DataFrame
+        The dataframe that contains the model's description
+    tr_set: np.ndarray
+        The training set
+    val_set: np.ndarray
+        the validation set
+    index: int
+        The index of the model to be trained
+    topologies_dict: dict
+        Dictionary that contains desctiption of the topologies contained in the dataframe
+    early_stop: bool
+        Whether to use or not the value contained in df to set the early stopping based on tr_error
+        
+    Returns
+    -------
+    return: [NeuralNetwork, dict]
+        The model trained
+        The model's training stats
+    '''
+        
     default_values =  {
             'range_min' : -0.75,
             'range_max' : 0.75,
@@ -104,6 +132,8 @@ def train_from_index(df, tr_set, val_set, index, topologies_dict, early_stop=Fal
     
 # -- PLOT --
 def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, style=False, font_size=14):
+    '''
+    '''
     x = np.arange(0, len(datas[0])).tolist()
     plt.rcParams.update({'font.size': font_size})
     styles = ['-.', '-']

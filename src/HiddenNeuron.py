@@ -99,15 +99,24 @@ class HiddenNeuron():
         tikhonov regularization and learning rate decay
         
             w_t+1 = w_t + gradient_based_update + momentum_based_update + tikhonov_based_update
+            
+            -> gradient_based_update depends on learning_rate, eta_tau, lr_decay_tau and the gradient
+            -> momentum_based_update depends alpha momentum
+            -> tikhonov_based_update depends on lambda_tikhonov
         
         Parameters
         ----------
-        learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
-        eta_tau: Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
+        learning_rate: float
+            Eta hyperparameter to control the learning rate of the algorithm
+        lr_decay_tau: int
+            Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
+        eta_tau: float
+            Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
                         make the learnig rate decay
-        lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        alpha_momentum: Momentum Hyperparameter
+        lambda_tikhonov: float
+            Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        alpha_momentum: float
+            Momentum Hyperparameter
 
         Returns
         -------
@@ -154,15 +163,32 @@ class HiddenNeuron():
                               lambda_tikhonov:float = 0.0):
         '''
         Updates the weight vector (w) of the Neuron using Adamax
-        
         is the application of the Adam algoritm regularized with the infinity norm of the gradient
-        
+
+            alpha: learning_rate
+            beta1,beta2 : exp_decay_rates_1, exp_decay_rates_2
+            grad(theta): actual gradient (self.partial_weight_update * -1)
+            theta_0: Initial parameter vector
+            
+            weight update:
+                t ← t + 1
+                g_t ← grad(theta_t-1)                               (Get gradients at timestep t)
+                m_t ← beta1 * m_t-1 + (1 - beta1) · g_t             (Update biased first moment estimate)
+                u_t ← max(beta2 * u_t/1 , |g_t|)                    (Update the exponentially weighted infinity norm)
+                
+                tmp = beta1 ** t                                     (beta1 to the power of t)
+                theta_t ← theta_t/1 / (alpha / (1 / tmp)) ·m_t/u_t   (Update parameters)
+
         Parameters
         ----------
-        learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        exp_decay_rates_1: Exponential decay rates for the momentum
-        exp_decay_rates_2: Exponential decay rates for the infinite norm
-        lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        learning_rate: float
+            Eta hyperparameter to control the learning rate of the algorithm
+        exp_decay_rates_1: float
+            Exponential decay rates for the momentum
+        exp_decay_rates_2: float
+            Exponential decay rates for the infinite norm
+        lambda_tikhonov: float
+            Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         
         Returns
         -------
@@ -211,9 +237,12 @@ class HiddenNeuron():
         
         Parameters
         ----------
-        rand_range_min: minimum value for random weights initialisation range
-        rand_range_max: maximum value for random weights initialisation range
-        fan_in: if the weights'initialisation should also consider the Neuron's fan-in
+        rand_range_min: float
+            minimum value for random weights initialisation range
+        rand_range_max: float
+            maximum value for random weights initialisation range
+        fan_in: bool
+            if the weights'initialisation should also consider the Neuron's fan-in
 
         Returns
         -------
@@ -242,10 +271,6 @@ class HiddenNeuron():
         '''
         Calculates the Neuron's output on the inputs incoming from the other units
         
-        Parameters
-        ----------
-        input: Neuron's input vector
-
         Returns
         -------
         return: -
@@ -266,8 +291,10 @@ class HiddenNeuron():
 
         Parameters
         ----------
-        delta: the error of the successor
-        weight: the weight of the successor that correspond to the output of this unit
+        delta: float
+            the error of the successor
+        weight: float
+            the weight of the successor that correspond to the output of this unit
 
         Returns
         -------
@@ -309,7 +336,8 @@ class HiddenNeuron():
         
         Parameters
         ----------
-        neuron: the Neuron to add to the list of successors
+        neuron: HiddenNeuron or OutputNeuron
+            the Neuron to add to the list of successors
 
         Returns
         -------
@@ -324,7 +352,8 @@ class HiddenNeuron():
         
         Parameters
         ----------
-        neuron: the Neuron to add to the list of predecessors
+        neuron: HiddenNeuron or InputNeuron
+            the Neuron to add to the list of predecessors
 
         Returns
         -------
@@ -339,7 +368,8 @@ class HiddenNeuron():
         
         Parameters
         ----------
-        neurons: the list of Neurons to add to the list of successors
+        neurons: list of HiddenNeuron or list of OutputNeuronthe 
+            list of Neurons to add to the list of successors
         
         Returns
         -------

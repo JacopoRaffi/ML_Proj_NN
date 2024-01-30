@@ -175,12 +175,8 @@ class ModelSelection:
         'collect_data_batch':False, 
         'verbose':False
         }
-        self.inzialization_arg_names = ['topology', 'range_min', 'range_max', 'fan_in', 'random_state']
-        self.train_arg_names = ['batch_size', 'max_epochs', 'retraing_es_error', 'error_increase_tolerance', 'patience', 'min_epochs', 
-                       'learning_rate', 'lr_decay_tau', 'eta_tau',  'lambda_tikhonov', 'alpha_momentum', 'nesterov', 
-                       'adamax', 'adamax_learning_rate', 'exp_decay_rate_1', 'exp_decay_rate_2',
-                       'metrics', 'collect_data', 
-                        'collect_data_batch', 'verbose']
+        self.inzialization_arg_names = NeuralNetwork.inzialization_input.copy()
+        self.train_arg_names = NeuralNetwork.train_input.copy()
     
     def __restore_backup(self, hyperparameters:list = None):
         '''

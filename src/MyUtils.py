@@ -120,6 +120,7 @@ def multy_plot(datas, labels, title=None, scale='linear', ax=None, legend=True, 
     if legend:
         plt.legend()
     plt.yscale(scale)
+    plt.xlabel('epochs')
     if ax == None: plt.show()
 
 def multy_plot_3d(x, y, z, label, title):

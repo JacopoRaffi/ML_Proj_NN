@@ -176,7 +176,30 @@ class ModelSelection:
         'verbose':False
         }
         self.inzialization_arg_names = NeuralNetwork.inzialization_input.copy()
-        self.train_arg_names = NeuralNetwork.train_input.copy()
+        self.train_arg_names = ['batch_size', 
+                                'max_epochs', 
+                                'min_epochs',
+                                'retrainig_es_error',
+                                'patience', 
+                                'error_increase_tolerance', 
+                                
+                                'lambda_tikhonov',
+                                
+                                'adamax',
+                                'adamax_learning_rate',
+                                'exp_decay_rate_1',
+                                'exp_decay_rate_2',
+                                
+                                'learning_rate',
+                                'lr_decay_tau',
+                                'eta_tau',         
+                                'alpha_momentum', 
+                                'nesterov',
+                                
+                                'metrics', 
+                                'collect_data', 
+                                'collect_data_batch', 
+                                'verbose']
     
     def __restore_backup(self, hyperparameters:list = None):
         '''

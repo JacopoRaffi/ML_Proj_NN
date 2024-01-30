@@ -1,1 +1,0 @@
-adamax,alpha_momentum,batch_size,error_increase_tolerance,lambda_tikhonov,learning_rate,lr_decay_tau,max_epochs,min_epochs,patience,topology,stats,mean_mean_euclidean_error,mean_mean_squared_error,var_mean_euclidean_error,var_mean_squared_error,mean_best_validation_training_error

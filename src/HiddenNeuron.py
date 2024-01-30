@@ -43,12 +43,18 @@ class HiddenNeuron():
 
     def __init__(self, index:int, activation_fun:callable = ActivationFunctions.sigmoid, *args):
         '''
-        Neuron initialisation
+        Neuron constructor
         
-        param index: the index of the neuron in the NN
-        param activation_fun: the Neuron's actviation function
-        param args: additional (optional) parameters of the activation function
+        Parameters
+        ----------
+        index: int
+            the index of the neuron in the NN
+        activation_fun: callable
+            the Neuron's actviation function
+        args: additional (optional) parameters of the activation function
 
+        Returns
+        -------
         return: -
         '''
         self.index = index
@@ -77,8 +83,10 @@ class HiddenNeuron():
     
     def increase_steps(self):
         '''
-        Increase by one self.step
-
+        Increase by one self.steps, is called at every epoch to notify the neuron
+        
+        Returns
+        -------
         return: -
         '''
         self.steps += 1 
@@ -90,13 +98,19 @@ class HiddenNeuron():
         Updates the weight vector (w) of the Neuron using, if active, nesterov momentum, standard momentum
         tikhonov regularization and learning rate decay
         
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
-        param eta_tau: Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
+            w_t+1 = w_t + gradient_based_update + momentum_based_update + tikhonov_based_update
+        
+        Parameters
+        ----------
+        learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        lr_decay_tau: Number of epochs after which the learning rate stop decreasing, before which the learning rate decay
+        eta_tau: Learning rate after iteration tau if lr_decay_tau > 0, before is used to 
                         make the learnig rate decay
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
-        param alpha_momentum: Momentum Hyperparameter
+        lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        alpha_momentum: Momentum Hyperparameter
 
+        Returns
+        -------
         return: -
         '''
         # if the learning rate decay is active, the learning step is adjusted depending on the iteration number
@@ -143,11 +157,15 @@ class HiddenNeuron():
         
         is the application of the Adam algoritm regularized with the infinity norm of the gradient
         
-        param learning_rate: Eta hyperparameter to control the learning rate of the algorithm
-        param exp_decay_rates_1: Exponential decay rates for the momentum
-        param exp_decay_rates_2: Exponential decay rates for the infinite norm
-        param lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
+        Parameters
+        ----------
+        learning_rate: Eta hyperparameter to control the learning rate of the algorithm
+        exp_decay_rates_1: Exponential decay rates for the momentum
+        exp_decay_rates_2: Exponential decay rates for the infinite norm
+        lambda_tikhonov: Lambda hyperparameter to control the learning algorithm complexity (Tikhonov Regularization / Ridge Regression)
         
+        Returns
+        -------
         return: -
         '''
         
@@ -191,10 +209,14 @@ class HiddenNeuron():
         Initialises the Neuron's weights vector (w).
         Updates the unit's numbers of predecessors and successors (the network has already been completely linked together)
         
-        param rand_range_min: minimum value for random weights initialisation range
-        param rand_range_max: maximum value for random weights initialisation range
-        param fan_in: if the weights'initialisation should also consider the Neuron's fan-in
+        Parameters
+        ----------
+        rand_range_min: minimum value for random weights initialisation range
+        rand_range_max: maximum value for random weights initialisation range
+        fan_in: if the weights'initialisation should also consider the Neuron's fan-in
 
+        Returns
+        -------
         return: -
         '''
 
@@ -220,8 +242,12 @@ class HiddenNeuron():
         '''
         Calculates the Neuron's output on the inputs incoming from the other units
         
-        param input: Neuron's input vector
+        Parameters
+        ----------
+        input: Neuron's input vector
 
+        Returns
+        -------
         return: -
         '''
         # the input vector is initialized and computed
@@ -238,9 +264,13 @@ class HiddenNeuron():
         '''
         Function used by successors, accumulate the weighted error of the successors.
 
-        param delta: the error of the successor
-        param weight: the weight of the successor that correspond to the output of this unit
+        Parameters
+        ----------
+        delta: the error of the successor
+        weight: the weight of the successor that correspond to the output of this unit
 
+        Returns
+        -------
         return: -
         '''
 
@@ -252,6 +282,8 @@ class HiddenNeuron():
         Calculates the Neuron's error contribute for a given learning pattern
         Calculates a partial weight update for the Neuron (Partial Backpropagation)
         
+        Returns
+        -------
         return: -
         '''
         # here we create the vector
@@ -275,8 +307,12 @@ class HiddenNeuron():
         Adds a neuron to the list of the Neuron's successors and
         update the predecessors' list of the successor neuron with the current neuron
         
-        param neuron: the Neuron to add to the list of successors
+        Parameters
+        ----------
+        neuron: the Neuron to add to the list of successors
 
+        Returns
+        -------
         return: -
         '''
         self.successors.append(neuron)
@@ -286,8 +322,12 @@ class HiddenNeuron():
         '''
         Adds a neuron to the list of the Neuron's predecessors
         
-        param neuron: the Neuron to add to the list of predecessors
+        Parameters
+        ----------
+        neuron: the Neuron to add to the list of predecessors
 
+        Returns
+        -------
         return: -
         '''
         self.predecessors.append(neuron)
@@ -297,7 +337,12 @@ class HiddenNeuron():
         Extends the list of the Neuron's successors and
         update the predecessors' list of the successors neurons with the current neuron
         
-        param neurons: the list of Neurons to add to the list of successors
+        Parameters
+        ----------
+        neurons: the list of Neurons to add to the list of successors
+        
+        Returns
+        -------
         return: -
         '''
         self.successors.extend(neurons)

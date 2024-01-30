@@ -2,16 +2,25 @@ import math
 import numpy
 
 
-'''The collections of all implemented activation functions and related methods'''
+'''
+The collections of all implemented activation functions and related methods
+'''
 
 def derivative(fun:callable, input:float, *args):
     '''
     Method which calculates the first order derivative of the given function for the given input
     
-    param fun: a differentiable function
-    param input: the input on which the derivative is calculated
+    Parameters
+    ----------
+    fun: callable
+        The differentiable function whose derivative is computed
+    input: float
+        the input on which the derivative is calculated
 
-    return: fun's derivative calculated on the input
+    Returns
+    -------
+    return: float
+        fun's derivative calculated on the input
     '''
 
     # to correct compute the relud derivate around and in 0
@@ -30,13 +39,19 @@ def derivative(fun:callable, input:float, *args):
 
     return numpy.gradient(y, x, edge_order=2)[1]
 
-def identity(input, *args):
+def identity(input:float, *args):
     '''
     The identity function
     
-    param input: the input of the function
+    Parameters
+    ----------
+    input: float
+        the input of the function
     
-    return: the results of the identity function
+    Returns
+    -------
+    return: float
+        the results of the identity function
     '''
     return input
 
@@ -45,10 +60,17 @@ def sigmoid(input, slope, *args):
     '''
     The sigmoidal logistic function
     
-    param input: the input of the function
-    param slope: the slope parameter of the sigmoid function
+    Parameters
+    ----------
+    input: float
+        the input of the function
+    slope: float
+        the slope parameter of the sigmoid function
     
-    return: the results of the sigmoid function
+    Returns
+    -------
+    return: float
+        the results of the sigmoid function
     '''
     
     return 1/(1 + math.exp(-(input)))
@@ -57,10 +79,17 @@ def tanh(input, slope, *args):
     '''
     The hyperbolic tangent function
     
-    param input: the input of the function
-    param slope: the slope parameter of the hyperbolic tangent function, the more alpha increases, the more skewed the function becomes
+    Parameters
+    ----------
+    input: float
+        the input of the function
+    slope: float
+        the slope parameter of the hyperbolic tangent function, the more alpha increases, the more skewed the function becomes
     
-    return: the results of the sigmoid function
+    Returns
+    -------
+    return: float
+        the results of the sigmoid function
     '''
 
     return numpy.tanh((input)/2)
@@ -69,10 +98,15 @@ def softplus(input, *args):
     '''
     The softplus function 
     
-    param input: the input of the function
-    param args[0]: ignored
+    Parameters
+    ----------
+    input: float
+        the input of the function
 
-    return: the results of the sigmoid function
+    Returns
+    -------
+    return: float
+        the results of the sigmoid function
     '''
 
     # a safe softplus for large input
@@ -82,10 +116,17 @@ def gaussian(input, slope, *args):
     '''
     The gaussian function
     
-    param input: the input of the function
-    param slope: the slope parameter of the gaussian function
+    Parameters
+    ----------
+    input: float
+        the input of the function
+    slope: float
+        the slope parameter of the gaussian function
 
-    return: the results of the sigmoid function
+    Returns
+    -------
+    return: float
+        the results of the sigmoid function
     '''
 
     return math.exp(-slope*(input**2))
@@ -94,9 +135,15 @@ def ReLU(input, *args):
     '''
     The ReLU function
     
-    param input: the input of the function
+    Parameters
+    ----------
+    input: float
+        the input of the function
 
-    return: the results of the sigmoid function
+    Returns
+    -------
+    return: float
+        the results of the sigmoid function
     '''
 
     return max(0.0, input)

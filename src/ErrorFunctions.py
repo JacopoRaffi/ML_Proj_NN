@@ -1,17 +1,25 @@
 import numpy as np
 import math
-import sklearn.metrics as skm
 
-'''The collections of all implemented error functions'''
+'''
+The collections of all implemented error functions
+'''
 
 def mean_euclidean_error(outputs:np.ndarray, targets:np.ndarray):
     '''
     Calculates the Mean Euclidean Error for a given learning set of patterns
     
-    param outputs: the predicted NN's outputs
-    param targets: the targhet values
+    Parameters
+    ----------
+    outputs: np.ndarray
+        the predicted NN's outputs
+    targets: np.ndarray
+        the targhet values
 
-    return: the MEE value    
+    Returns
+    -------
+    return: float
+        the Mean Euclidean Error value    
     '''
 
     sum = 0
@@ -24,10 +32,17 @@ def mean_squared_error(outputs:np.ndarray, targets:np.ndarray):
     '''
     Calculates the Mean Squared Error for a given learning set of patterns
     
-    param outputs: the predicted NN's outputs
-    param targets: the targhet values
+    Parameters
+    ----------
+    outputs: np.ndarray
+        the predicted NN's outputs
+    targets: np.ndarray
+        the targhet values
 
-    return: the MSE value (or RMSE value)
+    Returns
+    -------
+    return: float
+        the Mean Squared Error value
     '''
 
     error = np.mean(np.sum((targets-outputs)**2, axis=1))
@@ -42,10 +57,17 @@ def accuracy(outputs:np.ndarray, targets:np.ndarray):
     Calculates the accuracy for a given learning set of patterns, computed as:
         Accuracy = (TP + TN) / (TP + TN + FP + FN)
     
-    param outputs: the predicted NN's outputs, boolean values or the probability of the positive class
-    param targets: the targhet values, trictly boolean values
+    Parameters
+    ----------
+    outputs: np.ndarray
+        the predicted NN's outputs, boolean values or the probability of the positive class
+    targets: np.ndarray
+        the targhet values, trictly boolean values
 
-    return: the accuracy value
+    Returns
+    -------
+    return: float
+        the accuracy value
     '''
     N = targets.shape[0]
     if outputs.shape[1] > 1:

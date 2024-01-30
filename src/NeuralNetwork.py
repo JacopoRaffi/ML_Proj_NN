@@ -565,6 +565,7 @@ class NeuralNetwork:
         The neuron's structure and hidden and output neuron's update_weights functions
         '''
 
+        # function used to iterate over the training set and tanke batch_size patterns at each time
         def circular_index(a, start, stop): 
             '''
             start is included
@@ -575,8 +576,7 @@ class NeuralNetwork:
                 stop += len(a)
             return np.arange(start, stop)%len(a)
 
-        #TODO Controllare i valori e capire se sono permessi (ad esempio batch_size > 0 ecc...)
-
+        # initializing every variables with the correct value
         epochs = 0
         exhausting_patience = patience
         last_error_increase_percentage = -1
@@ -586,10 +586,13 @@ class NeuralNetwork:
         tr_err = np.inf
         training_set_length = len(training_set)
         batch_index = 0
+        # simple check to adjust bad input values
         if batch_size > training_set_length: batch_size = training_set_length
         
+        # variables used in retrain to stop at the right training error
         retrainig_es = True
         retrainig_es_tollerance = 0.20
+        retrainig_es_error = retrainig_es_error + retrainig_es_error*retrainig_es_tollerance
         # initializing the dict where collect stats of the training
         stats = {
             # -- input stats --
@@ -621,14 +624,14 @@ class NeuralNetwork:
             'epochs':0,      
         }
         
-        # print some information
-        
-        if collect_data: # take training time for the batch
+        if collect_data: 
+            # take training time for the batch
             stats['total_train_time'] = datetime.datetime.now() - datetime.datetime.now()
             stats['mean_epoch_train_time'] = 0
             stats['units_weights'] = {}
             stats['units_weights_batch'] = {}
             
+            # initializing lists to collect data
             for mes in metrics:
             # epoch stats
                 stats['training_' + mes.__name__] = []
@@ -637,7 +640,6 @@ class NeuralNetwork:
                     # batch stats
                     stats['training_batch_' + mes.__name__] = []
                     stats['validation_batch_' + mes.__name__] = []
-
             for unit in self.neurons[self.input_size:]:
                 # epoch stats
                 stats['units_weights'][unit.index] = []
@@ -648,34 +650,48 @@ class NeuralNetwork:
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
 
+        # try to catch every error, used for debugging purpose
         try:
             # start training cycle
             while (epochs < max_epochs) and (exhausting_patience > 0) and retrainig_es:
-                # batch
+                # batch iteration
                 for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
+                    # for each pattern the prediction is computed, and the values is forwarded in the net
                     self.predict(sample[:self.input_size])
+                    # then the backpropagation is done to backpropagate the error and store information for the weights update
                     self.__backpropagation(sample[self.input_size:])
 
+                # after every batch the weighs are update accordingly to the optimized chosen
                 if adamax:
+                    # Adamax
                     for neuron in self.neurons[self.input_size:]:
                         neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rate_1, exp_decay_rate_2, lambda_tikhonov)
                 else:
+                    # Standard
                     for neuron in self.neurons[self.input_size:]:
                         neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
 
                 # stats for every batch
-                if collect_data and collect_data_batch and epochs > 0: # to avoid stupidly high starting values
+                # to avoid stupidly high starting values the first epochs is skipped
+                if collect_data and collect_data_batch and epochs > 0: 
+                    # computing errors
                     for mes in metrics:
                         stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
                         if not validation_set is None:
                             stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
+                    # storing unit's weights
                     for unit in self.neurons[self.input_size:]:
                         stats['units_weights_batch'][unit.index].append(list(unit.w))
 
                 batch_index += batch_size
+                # after every batch is checked if an epoch is passed
                 if batch_index >= training_set_length:
+                    # end of the epoch
+                    
+                    # step parameter in neuron are updated
                     for neuron in self.neurons[self.input_size:]:
                         neuron.increase_steps()
+                    # patience related computation, usefoul to check if to stop the training
                     if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
                         exhausting_patience -= 1
                     else:
@@ -684,7 +700,10 @@ class NeuralNetwork:
                     epochs += 1
                     batch_index = batch_index%training_set_length
 
+                    # the training error is computed
                     training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                    # if validation_set is given we compute the error to check if we are ath the minimum and store the 
+                    # training error of this iteration
                     if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:
@@ -694,18 +713,19 @@ class NeuralNetwork:
                             
                             stats['best_validation_training_error'] = min(stats['best_validation_training_error'], training_err)
                         last_error = new_error
-                    
-                    if training_err < retrainig_es_error*(1 + retrainig_es_tollerance):
+                    # in retraining this stops the learning when the validation tends to be the minimum, is calculated correctly
+                    # in a previous training
+                    if training_err < retrainig_es_error:
                             retrainig_es = False
                     
                     # stats for every epoch
                     if collect_data:
                         # take training time for the epoch
                         end_time = datetime.datetime.now()   
-
                         if collect_data:
                             stats['total_train_time'] += (end_time-start_time)
 
+                        # computing every error and printing some information if verbose is True
                         if verbose: metrics_to_print = ''
                         for mes in metrics:
                             tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
@@ -725,7 +745,8 @@ class NeuralNetwork:
             print(e)
             raise e
         
-        # if nesterov is exploited, the weight needs to be modified for the final use
+        # if nesterov is exploited, the weight needs to be modified after the final training iteration, check the neuron's
+        # update_weights method
         if nesterov:
             for neuron in self.neurons[self.input_size:]:
                 neuron.w += alpha_momentum * neuron.old_weight_update * nesterov 

@@ -636,10 +636,14 @@ class NeuralNetwork:
             # epoch stats
                 stats['training_' + mes.__name__] = []
                 stats['validation_' + mes.__name__] = []
+                
+                stats['training_pred_' + mes.__name__] = []
+                stats['validation_pred_' + mes.__name__] = []
                 if collect_data_batch:
                     # batch stats
                     stats['training_batch_' + mes.__name__] = []
                     stats['validation_batch_' + mes.__name__] = []
+                    
             for unit in self.neurons[self.input_size:]:
                 # epoch stats
                 stats['units_weights'][unit.index] = []
@@ -649,8 +653,7 @@ class NeuralNetwork:
             
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
-        stats['val_preds'] = []
-        stats['train_preds'] = []
+            
         # try to catch every error, used for debugging purpose
         try:
             # start training cycle
@@ -729,11 +732,18 @@ class NeuralNetwork:
                         # computing every error and printing some information if verbose is True
                         if verbose: metrics_to_print = ''
                         for mes in metrics:
-                            tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                            
+                            pred = self.predict_array(training_set[:,:self.input_size])
+                            tr_err = mes(pred, training_set[:,self.input_size:])
                             stats['training_' + mes.__name__].append(tr_err)
+                            stats['training_pred_' + mes.__name__].append(pred)
+                
                             if not(validation_set is None):
-                                val_err = mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
+                                
+                                pred = self.predict_array(validation_set[:,:self.input_size])
+                                val_err = mes(pred, validation_set[:,self.input_size:])
                                 stats['validation_' + mes.__name__].append(val_err)
+                                stats['validation_pred_' + mes.__name__].append(pred)
 
                             if verbose: metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
                         for unit in self.neurons[self.input_size:]:

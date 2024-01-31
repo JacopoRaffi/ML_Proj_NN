@@ -13,6 +13,8 @@ import os
 import ast
 import pandas
 import time
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
 
 from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
@@ -212,7 +214,12 @@ class ModelSelection:
                                 'collect_data', 
                                 'collect_data_batch', 
                                 'verbose']
-    
+
+        ML_cup_train = pd.read_csv('../data/ML-CUP23-TR.csv', header=None, index_col=0, comment='#').sample(frac=1, random_state=RANDOM_STATE)
+        TR_INPUT = 10
+        self.scaler_out = StandardScaler()
+        self.scaler_out = self.scaler_out.fit(ML_cup_train[:,TR_INPUT:])
+
     def __restore_backup(self, hyperparameters:list = None):
         '''
         Restore model selection's state from a backup folder

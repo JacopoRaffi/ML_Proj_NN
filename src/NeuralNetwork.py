@@ -481,7 +481,9 @@ class NeuralNetwork:
               metrics:list=[], 
               collect_data:bool=True, 
               collect_data_batch:bool=False, 
-              verbose:bool=True):
+              verbose:bool=True,
+              
+              dataset_agg=None):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
@@ -736,6 +738,7 @@ class NeuralNetwork:
                             pred = self.predict_array(training_set[:,:self.input_size])
                             tr_err = mes(pred, training_set[:,self.input_size:])
                             stats['training_' + mes.__name__].append(tr_err)
+                            pred = self.predict_array(dataset_agg[:,:self.input_size])
                             stats['training_pred_' + mes.__name__].append(pred)
                 
                             if not(validation_set is None):

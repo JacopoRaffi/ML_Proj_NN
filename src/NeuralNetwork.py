@@ -483,15 +483,15 @@ class NeuralNetwork:
               collect_data_batch:bool=False, 
               verbose:bool=True,
               
-              dataset_agg=None):
+              supp_dataset=None):
         '''
         Compute the Backpropagation training algorithm on the NN for given training samples and hyperparameters
         
         Parameters
         ----------
-        training_set: np.array
+        training_set: np.ndarray
             set of samples (pattern-target) for supervised learning that is used for the training
-        validation_set: np.array
+        validation_set: np.ndarray
             set of samples (pattern-target) for supervised learning that is used for valdation purposes:
                 -> computing validation error in the training process
                 -> computing best_validation_training_error, the training error when the validation 
@@ -552,6 +552,9 @@ class NeuralNetwork:
             If to collect datas at the end of each batch during traning, if True  the training is severely slowed
         verbose: bool
             If to print some information in the standard output during training
+            
+        supp_dataset: np.ndarray
+            Used to gather information regarding the dataset usend in the ensimbling
             
         Returns
         -------
@@ -737,8 +740,9 @@ class NeuralNetwork:
                         if verbose: metrics_to_print = ''
                         
                         pred_tr = self.predict_array(training_set[:,:self.input_size])
-                        pred_dsa = self.predict_array(dataset_agg[:,:self.input_size])
-                        stats['training_pred'].append(pred_dsa)
+                        if not(supp_dataset is None):
+                            pred_dsa = self.predict_array(supp_dataset[:,:self.input_size])
+                            stats['training_pred'].append(pred_dsa)
                         
                         val_err = -1
                         if not(validation_set is None):

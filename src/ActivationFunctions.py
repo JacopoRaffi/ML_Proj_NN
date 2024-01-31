@@ -72,8 +72,13 @@ def sigmoid(input, slope, *args):
     return: float
         the results of the sigmoid function
     '''
-    
-    return 1/(1 + math.exp(-(input)))
+    scarto = 5
+    if input > scarto:
+        return 1
+    elif input < -scarto:
+        return 0
+    else: 
+        return 1/(1 + math.exp(-(input)))
 
 def tanh(input, slope, *args):
     '''

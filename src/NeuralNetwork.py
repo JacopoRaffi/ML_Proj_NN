@@ -740,7 +740,7 @@ class NeuralNetwork:
                             stats['training_' + mes.__name__].append(tr_err)
                             pred = self.predict_array(dataset_agg[:,:self.input_size])
                             stats['training_pred_' + mes.__name__].append(pred)
-                
+                            val_err = -1
                             if not(validation_set is None):
                                 
                                 pred = self.predict_array(validation_set[:,:self.input_size])

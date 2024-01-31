@@ -740,6 +740,7 @@ class NeuralNetwork:
                         pred_dsa = self.predict_array(dataset_agg[:,:self.input_size])
                         stats['training_pred'].append(pred_dsa)
                         
+                        val_err = -1
                         if not(validation_set is None):
                             pred_val = self.predict_array(validation_set[:,:self.input_size])
                             stats['validation_pred'].append(pred_val)
@@ -747,12 +748,13 @@ class NeuralNetwork:
                         for mes in metrics:     
                             tr_err = mes(pred_tr, training_set[:,self.input_size:])
                             stats['training_' + mes.__name__].append(tr_err)
-
                             if not(validation_set is None):
                                 val_err = mes(pred_val, validation_set[:,self.input_size:])
                                 stats['validation_' + mes.__name__].append(val_err)
                                 
-                            if verbose: metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
+                            if verbose: 
+                                metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
+                            
                         for unit in self.neurons[self.input_size:]:
                             stats['units_weights'][unit.index].append(list(unit.w))
 

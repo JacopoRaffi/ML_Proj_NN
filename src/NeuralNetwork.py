@@ -593,7 +593,7 @@ class NeuralNetwork:
         
         # variables used in retrain to stop at the right training error
         retrainig_es = True
-        retrainig_es_tollerance = 0.20
+        retrainig_es_tollerance = 0.1
         retrainig_es_error = retrainig_es_error + retrainig_es_error*retrainig_es_tollerance
         # initializing the dict where collect stats of the training
         stats = {

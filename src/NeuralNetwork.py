@@ -649,7 +649,8 @@ class NeuralNetwork:
             
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
-
+        stats['val_preds'] = []
+        stats['train_preds'] = []
         # try to catch every error, used for debugging purpose
         try:
             # start training cycle
@@ -677,7 +678,7 @@ class NeuralNetwork:
                     # computing errors
                     for mes in metrics:
                         stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
-                        if not validation_set is None:
+                        if not(validation_set is None):
                             stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
                     # storing unit's weights
                     for unit in self.neurons[self.input_size:]:
@@ -704,7 +705,7 @@ class NeuralNetwork:
                     training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                     # if validation_set is given we compute the error to check if we are ath the minimum and store the 
                     # training error of this iteration
-                    if (validation_set is not None) and (error_increase_tolerance > 0): # if True compute Early Stopping
+                    if not(validation_set is None) and (error_increase_tolerance > 0): # if True compute Early Stopping
                         new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
                         if new_error > last_error:
                             last_error_increase_percentage = (new_error - last_error)/last_error    
@@ -730,7 +731,7 @@ class NeuralNetwork:
                         for mes in metrics:
                             tr_err = mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
                             stats['training_' + mes.__name__].append(tr_err)
-                            if not validation_set is None:
+                            if not(validation_set is None):
                                 val_err = mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
                                 stats['validation_' + mes.__name__].append(val_err)
 

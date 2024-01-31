@@ -197,15 +197,15 @@ class OutputNeuron():
         # learning rate decay influence
         dummy_2 = (1 - math.pow(exp_decay_rates_1, (self.steps + 1)))
         # weight update
-        weight_update = -(learning_rate/dummy_2)*dummy_1
+        weight_update = +(learning_rate/dummy_2)*dummy_1
         
         
         # here we add the tikhonov regularization
         tmp = np.copy(self.w)
-        weight_update = weight_update - (lambda_tikhonov * tmp)
+        weight_update = weight_update + (lambda_tikhonov * tmp)
         
         # here the weights are finally updated
-        self.w += weight_update
+        self.w -= weight_update
         
         # reset of every accumulative variable used
         self.old_weight_update = weight_update.copy()

@@ -60,6 +60,11 @@ class ModelSelection:
                 of the final evaluation metrics computed for every fold
         '''
         
+        ML_cup_train = pd.read_csv('../data/ML-CUP23-TR.csv', header=None, index_col=0, comment='#').sample(frac=1, random_state=RANDOM_STATE)
+        TR_INPUT = 10
+        scaler_out = StandardScaler()
+        scaler_out = scaler_out.fit(ML_cup_train[:,TR_INPUT:])
+        
         # Computation of the size of each split
         data_len = len(data_set)
         split_size = math.floor(data_len/k)
@@ -116,8 +121,8 @@ class ModelSelection:
                         stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
                         
             # we compute the final valdation metrics
-            outputs = model.predict_array(validation_set[:,:model.input_size])
-            targets = validation_set[:,model.input_size:]
+            outputs = scaler_out.inverse_transform(model.predict_array(validation_set[:,:model.input_size]))
+            targets = scaler_out.inverse_transform(validation_set[:,model.input_size:])
 
             for j, met in enumerate(metrics):
                 metr = met(outputs, targets)
@@ -214,11 +219,6 @@ class ModelSelection:
                                 'collect_data', 
                                 'collect_data_batch', 
                                 'verbose']
-
-        ML_cup_train = pd.read_csv('../data/ML-CUP23-TR.csv', header=None, index_col=0, comment='#').sample(frac=1, random_state=RANDOM_STATE)
-        TR_INPUT = 10
-        self.scaler_out = StandardScaler()
-        self.scaler_out = self.scaler_out.fit(ML_cup_train[:,TR_INPUT:])
 
     def __restore_backup(self, hyperparameters:list = None):
         '''

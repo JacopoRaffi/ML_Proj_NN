@@ -17,7 +17,7 @@ from NeuralNetwork import *
 The collections of useful function used in then project and useful global variables
 '''
 
-RANDOM_STATE = 9898
+RANDOM_STATE = 549123
 COLUMNS_ORDER = ['topology', 'stats',
  'batch_size',
  'min_epochs',

@@ -1,0 +1,5 @@
+Predictions on the ML Cup blind test were obtained by ensembling (bagging) 32 models, trained on data sets obtained by random 
+sampling with replacement on the entire training data set (final retraining after model assessment). All models used in this 
+technique share the same hyperparameter configuration, NN's topology and Learning Algorithm, according to the result of two iterations 
+of 3-fold CV (coarse-grained followed by fine-grained). The NNs considered were trained with Standard Backpropagation. 
+The reference topology consists of a single hidden layer with 32 hidden units and a sigmoid activation function.

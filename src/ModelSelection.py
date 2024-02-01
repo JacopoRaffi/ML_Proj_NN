@@ -1,5 +1,4 @@
 from ast import Raise
-from operator import index
 from matplotlib.pylab import f
 from pathlib import Path
 import random
@@ -13,8 +12,6 @@ import os
 import ast
 import pandas
 import time
-import pandas as pd
-from sklearn.preprocessing import StandardScaler
 
 from NeuralNetwork import NeuralNetwork
 import ErrorFunctions
@@ -59,11 +56,6 @@ class ModelSelection:
         return: a dct containing all the stats accumulated by the model during training, plus mean and variance
                 of the final evaluation metrics computed for every fold
         '''
-        
-        ML_cup_train = pd.read_csv('../data/ML-CUP23-TR.csv', header=None, index_col=0, comment='#').sample(frac=1, random_state=RANDOM_STATE)
-        TR_INPUT = 10
-        scaler_out = StandardScaler()
-        scaler_out = scaler_out.fit(ML_cup_train[:,TR_INPUT:])
         
         # Computation of the size of each split
         data_len = len(data_set)
@@ -121,8 +113,8 @@ class ModelSelection:
                         stats['validation_batch_' + mes.__name__].append(new_stats['validation_batch_' + mes.__name__])
                         
             # we compute the final valdation metrics
-            outputs = scaler_out.inverse_transform(model.predict_array(validation_set[:,:model.input_size]))
-            targets = scaler_out.inverse_transform(validation_set[:,model.input_size:])
+            outputs = model.predict_array(validation_set[:,:model.input_size])
+            targets = validation_set[:,model.input_size:]
 
             for j, met in enumerate(metrics):
                 metr = met(outputs, targets)

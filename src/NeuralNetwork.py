@@ -661,113 +661,108 @@ class NeuralNetwork:
             if verbose: print('starting values: ', stats)
             start_time = datetime.datetime.now()
             
-        # try to catch every error, used for debugging purpose
-        try:
-            # start training cycle
-            while (epochs < max_epochs) and (exhausting_patience > 0) and retrainig_es:
-                # batch iteration
-                for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
-                    # for each pattern the prediction is computed, and the values is forwarded in the net
-                    self.predict(sample[:self.input_size])
-                    # then the backpropagation is done to backpropagate the error and store information for the weights update
-                    self.__backpropagation(sample[self.input_size:])
+        # start training cycle
+        while (epochs < max_epochs) and (exhausting_patience > 0) and retrainig_es:
+            # batch iteration
+            for sample in training_set[circular_index(training_set, batch_index, (batch_index + batch_size) % training_set_length)]:
+                # for each pattern the prediction is computed, and the values is forwarded in the net
+                self.predict(sample[:self.input_size])
+                # then the backpropagation is done to backpropagate the error and store information for the weights update
+                self.__backpropagation(sample[self.input_size:])
 
-                # after every batch the weighs are update accordingly to the optimized chosen
-                if adamax:
-                    # Adamax
-                    for neuron in self.neurons[self.input_size:]:
-                        neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rate_1, exp_decay_rate_2, lambda_tikhonov)
+            # after every batch the weighs are update accordingly to the optimized chosen
+            if adamax:
+                # Adamax
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.update_weights_adamax(adamax_learning_rate, exp_decay_rate_1, exp_decay_rate_2, lambda_tikhonov)
+            else:
+                # Standard
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
+
+            # stats for every batch
+            # to avoid stupidly high starting values the first epochs is skipped
+            if collect_data and collect_data_batch and epochs > 0: 
+                # computing errors
+                for mes in metrics:
+                    stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
+                    if not(validation_set is None):
+                        stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
+                # storing unit's weights
+                for unit in self.neurons[self.input_size:]:
+                    stats['units_weights_batch'][unit.index].append(list(unit.w))
+
+            batch_index += batch_size
+            # after every batch is checked if an epoch is passed
+            if batch_index >= training_set_length:
+                # end of the epoch
+                
+                # step parameter in neuron are updated
+                for neuron in self.neurons[self.input_size:]:
+                    neuron.increase_steps()
+                # patience related computation, usefoul to check if to stop the training
+                if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
+                    exhausting_patience -= 1
                 else:
-                    # Standard
-                    for neuron in self.neurons[self.input_size:]:
-                        neuron.update_weights(learning_rate, lr_decay_tau, eta_tau, lambda_tikhonov, alpha_momentum, nesterov)
+                    exhausting_patience = patience
 
-                # stats for every batch
-                # to avoid stupidly high starting values the first epochs is skipped
-                if collect_data and collect_data_batch and epochs > 0: 
-                    # computing errors
-                    for mes in metrics:
-                        stats['training_batch_' + mes.__name__].append(mes(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:]))
-                        if not(validation_set is None):
-                            stats['validation_batch_' + mes.__name__].append(mes(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]))
-                    # storing unit's weights
-                    for unit in self.neurons[self.input_size:]:
-                        stats['units_weights_batch'][unit.index].append(list(unit.w))
+                epochs += 1
+                batch_index = batch_index%training_set_length
 
-                batch_index += batch_size
-                # after every batch is checked if an epoch is passed
-                if batch_index >= training_set_length:
-                    # end of the epoch
-                    
-                    # step parameter in neuron are updated
-                    for neuron in self.neurons[self.input_size:]:
-                        neuron.increase_steps()
-                    # patience related computation, usefoul to check if to stop the training
-                    if epochs > min_epochs and last_error_increase_percentage > error_increase_tolerance:
-                        exhausting_patience -= 1
+                # the training error is computed
+                training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
+                # if validation_set is given we compute the error to check if we are ath the minimum and store the 
+                # training error of this iteration
+                if not(validation_set is None) and (error_increase_tolerance > 0): # if True compute Early Stopping
+                    new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:])
+                    if new_error > last_error:
+                        last_error_increase_percentage = (new_error - last_error)/last_error    
                     else:
-                        exhausting_patience = patience
-
-                    epochs += 1
-                    batch_index = batch_index%training_set_length
-
-                    # the training error is computed
-                    training_err = ErrorFunctions.mean_squared_error(self.predict_array(training_set[:,:self.input_size]), training_set[:,self.input_size:])
-                    # if validation_set is given we compute the error to check if we are ath the minimum and store the 
-                    # training error of this iteration
-                    if not(validation_set is None) and (error_increase_tolerance > 0): # if True compute Early Stopping
-                        new_error = ErrorFunctions.mean_squared_error(self.predict_array(validation_set[:,:self.input_size]), validation_set[:,self.input_size:]) # TODO: se cambiamo la loss cambiare la funzione
-                        if new_error > last_error:
-                            last_error_increase_percentage = (new_error - last_error)/last_error    
-                        else:
-                            last_error_increase_percentage = 0
-                            
-                            stats['best_validation_training_error'] = min(stats['best_validation_training_error'], training_err)
-                        last_error = new_error
-                    # in retraining this stops the learning when the validation tends to be the minimum, is calculated correctly
-                    # in a previous training
-                    if training_err < retrainig_es_error:
-                            retrainig_es = False
-                    
-                    # stats for every epoch
+                        last_error_increase_percentage = 0
+                        
+                        stats['best_validation_training_error'] = min(stats['best_validation_training_error'], training_err)
+                    last_error = new_error
+                # in retraining this stops the learning when the validation tends to be the minimum, is calculated correctly
+                # in a previous training
+                if training_err < retrainig_es_error:
+                        retrainig_es = False
+                
+                # stats for every epoch
+                if collect_data:
+                    # take training time for the epoch
+                    end_time = datetime.datetime.now()   
                     if collect_data:
-                        # take training time for the epoch
-                        end_time = datetime.datetime.now()   
-                        if collect_data:
-                            stats['total_train_time'] += (end_time-start_time)
+                        stats['total_train_time'] += (end_time-start_time)
 
-                        # computing every error and printing some information if verbose is True
-                        if verbose: metrics_to_print = ''
+                    # computing every error and printing some information if verbose is True
+                    if verbose: metrics_to_print = ''
+                    
+                    pred_tr = self.predict_array(training_set[:,:self.input_size])
+                    if not(supp_dataset is None):
+                        pred_dsa = self.predict_array(supp_dataset[:,:self.input_size])
+                        stats['training_pred'].append(pred_dsa)
+                    
+                    val_err = -1
+                    if not(validation_set is None):
+                        pred_val = self.predict_array(validation_set[:,:self.input_size])
+                        stats['validation_pred'].append(pred_val)
                         
-                        pred_tr = self.predict_array(training_set[:,:self.input_size])
-                        if not(supp_dataset is None):
-                            pred_dsa = self.predict_array(supp_dataset[:,:self.input_size])
-                            stats['training_pred'].append(pred_dsa)
-                        
-                        val_err = -1
+                    for mes in metrics:     
+                        tr_err = mes(pred_tr, training_set[:,self.input_size:])
+                        stats['training_' + mes.__name__].append(tr_err)
                         if not(validation_set is None):
-                            pred_val = self.predict_array(validation_set[:,:self.input_size])
-                            stats['validation_pred'].append(pred_val)
+                            val_err = mes(pred_val, validation_set[:,self.input_size:])
+                            stats['validation_' + mes.__name__].append(val_err)
                             
-                        for mes in metrics:     
-                            tr_err = mes(pred_tr, training_set[:,self.input_size:])
-                            stats['training_' + mes.__name__].append(tr_err)
-                            if not(validation_set is None):
-                                val_err = mes(pred_val, validation_set[:,self.input_size:])
-                                stats['validation_' + mes.__name__].append(val_err)
-                                
-                            if verbose: 
-                                metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
-                            
-                        for unit in self.neurons[self.input_size:]:
-                            stats['units_weights'][unit.index].append(list(unit.w))
+                        if verbose: 
+                            metrics_to_print += '| ' +mes.__name__ + ': tr=' + str(tr_err) + ' val=' + str(val_err) + ' | '
+                        
+                    for unit in self.neurons[self.input_size:]:
+                        stats['units_weights'][unit.index].append(list(unit.w))
 
-                        if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
-                        # take training time for the batch
-                        start_time = datetime.datetime.now()
-        except Exception as e:
-            print(e)
-            raise e
+                    if verbose: print('[' + str(epochs) + '/' + str(max_epochs) + '] tr time:', end_time-start_time, metrics_to_print)
+                    # take training time for the batch
+                    start_time = datetime.datetime.now()
         
         # if nesterov is exploited, the weight needs to be modified after the final training iteration, check the neuron's
         # update_weights method
